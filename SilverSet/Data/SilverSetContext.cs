@@ -8,5 +8,7 @@ namespace SilverSet.Data
         public SilverSetContext(DbContextOptions<SilverSetContext> options) : base(options)
         {
         }
+        public DbSet<LoginLog> LoginLogs { get; set; }
+        public DbSet<SilverSet.Areas.Admin.Models.Entities.Admin> Admins { get; set; }
     }
 }
