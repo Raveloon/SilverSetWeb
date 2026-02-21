@@ -1,0 +1,94 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - SilverSet Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Rajdhani', sans-serif; background-color: #0f172a; color: #e2e8f0; }
+        /* Mobil menü geçiş efekti */
+        .sidebar-transition { transition: transform 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden bg-slate-900">
+
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-800 border-r border-slate-700 transform -translate-x-full md:relative md:translate-x-0 sidebar-transition flex flex-col">
+
+        <div class="h-16 flex items-center justify-center border-b border-slate-700">
+            <h1 class="text-2xl font-bold text-blue-500 tracking-wider">SILVERSET<span class="text-white">ADMIN</span></h1>
+        </div>
+
+        <nav class="flex-1 px-4 py-6 space-y-2">
+            <a asp-area="Admin" asp-controller="Home" asp-action="Index"
+               class="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-blue-400 rounded-lg transition-colors">
+                <span class="material-icons mr-3">dashboard</span>
+                Genel Bakış
+            </a>
+
+            <a asp-area="Admin" asp-controller="Users" asp-action="Index"
+               class="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-blue-400 rounded-lg transition-colors">
+                <span class="material-icons mr-3">people</span>
+                Kullanıcılar
+            </a>
+
+            <a asp-area="Admin" asp-controller="Projects" asp-action="Index"
+               class="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-blue-400 rounded-lg transition-colors">
+                <span class="material-icons mr-3">games</span>
+                Projeler / Oyunlar
+            </a>
+
+            <a asp-area="Admin" asp-controller="Settings" asp-action="Index"
+               class="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-blue-400 rounded-lg transition-colors">
+                <span class="material-icons mr-3">settings</span>
+                Ayarlar
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-slate-700">
+            <a href="/" class="flex items-center px-4 py-2 text-red-400 hover:bg-red-500/10 rounded-lg transition">
+                <span class="material-icons mr-3">logout</span> Çıkış Yap
+            </a>
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-screen overflow-hidden">
+
+        <header class="h-16 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-6">
+
+            <button id="menu-btn" class="text-slate-300 hover:text-white md:hidden focus:outline-none">
+                <span class="material-icons text-3xl">menu</span>
+            </button>
+
+            <div class="flex items-center ml-auto space-x-4">
+                <span class="text-slate-400 text-sm hidden sm:block">Hoş geldin, TunahanAdmin</span>
+                <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold shadow-lg">
+                    T
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-900 p-6">
+            @RenderBody()
+        </main>
+    </div>
+
+    <script>
+        const menuBtn = document.getElementById('menu-btn');
+        const sidebar = document.getElementById('sidebar');
+
+        menuBtn.addEventListener('click', () => {
+            // Sidebar'ı aç/kapat (Telefonda)
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+            }
+        });
+
+        // Ekrana tıklandığında menüyü kapatmak istersen buraya ekleme yapılabilir.
+    </script>
+</body>
+</html>

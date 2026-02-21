@@ -1,4 +1,4 @@
-﻿namespace SilverSet.Models.ViewModels
+﻿namespace SilverSet.Areas.Admin.Models.ViewModels
 {
     public class LoginViewModel
     {

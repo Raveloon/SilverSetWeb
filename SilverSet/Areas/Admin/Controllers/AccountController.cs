@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SilverSet.Areas.Admin.Models.ViewModels;
 using SilverSet.Data;
 using SilverSet.Models.Entities;
-using SilverSet.Models.ViewModels;
 
 namespace SilverSet.Areas.Admin.Controllers
 {
@@ -22,7 +22,20 @@ namespace SilverSet.Areas.Admin.Controllers
             return View();
         }
         [HttpPost]
-        public async Task<IActionResult> Login(LoginViewModel model) { 
+        public async Task<IActionResult> Login(LoginViewModel model) {
+
+            string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown IP"; //Todo : IP adresi alma işlemi daha güvenilir hale getirilebilir, proxy durumları vs. için ek kontroller eklenebilir.
+
+
+            var recentFailures = await _context.LoginLogs
+        .Where(x => x.IpAddress == clientIp && !x.IsSuccessful && x.LoginTime > DateTime.Now.AddMinutes(-15))
+        .CountAsync();
+
+            if (recentFailures >= 5)
+            {
+                ViewBag.ErrorMessage = "Çok fazla başarısız giriş denemesi tespit edildi. Lütfen 15 dakika sonra tekrar deneyin.";
+                return View(model);
+            }
             var admin = await _context.Admins.FirstOrDefaultAsync(x => x.AdminName == model.AdminName);
 
             bool isSuccess = false;
@@ -41,11 +54,15 @@ namespace SilverSet.Areas.Admin.Controllers
             }
             var loginLog = new LoginLog
             {
-               Email = model.AdminName ?? "Bilinmeyen Deneme",
+                Email = model.AdminName ?? "Bilinmeyen Deneme",
                 LoginTime = DateTime.Now,
-               IsSuccessful = isSuccess,
-                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Bilinmeyen IP"
+                IsSuccessful = isSuccess,
+                IpAddress = clientIp
             };
+            _context.LoginLogs.Add(loginLog);
+
+            await _context.SaveChangesAsync();
+
             if (isSuccess) {
                 return RedirectToAction("Index", "Home", new { area = "Admin" }); // TODO ! buraya admin paneli gelecek unutma!!!!!!!
             }
