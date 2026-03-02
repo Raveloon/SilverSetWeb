@@ -12,18 +12,27 @@ namespace SilverSet.Areas.Admin.Controllers
     {
         private readonly SilverSetContext _context;
 
-        public AccountController(SilverSetContext context)
+        private readonly SignInManager<AppUser> _signInManager;
+        private readonly UserManager<AppUser> _userManager;
+
+        public AccountController(SilverSetContext context, SignInManager<AppUser> signInManager, UserManager<AppUser> userManager)
         {
             _context = context;
+            _signInManager = signInManager;
+            _userManager = userManager;
         }
         [HttpGet]
         public IActionResult Login()
         {
             return View();
         }
+        [ValidateAntiForgeryToken]
         [HttpPost]
         public async Task<IActionResult> Login(LoginViewModel model) {
 
+            if (!ModelState.IsValid) {
+                return View(model);
+            }
             string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown IP"; //Todo : IP adresi alma işlemi daha güvenilir hale getirilebilir, proxy durumları vs. için ek kontroller eklenebilir.
 
 
@@ -36,19 +45,24 @@ namespace SilverSet.Areas.Admin.Controllers
                 ViewBag.ErrorMessage = "Çok fazla başarısız giriş denemesi tespit edildi. Lütfen 15 dakika sonra tekrar deneyin.";
                 return View(model);
             }
-            var admin = await _context.Admins.FirstOrDefaultAsync(x => x.AdminName == model.AdminName);
+            var user = await _userManager.FindByNameAsync(model.AdminName);
 
             bool isSuccess = false;
 
-            if (admin != null) {
-                var hasher = new PasswordHasher<SilverSet.Areas.Admin.Models.Entities.Admin>();
-                var result = hasher.VerifyHashedPassword(admin, admin.PasswordHash,
-                    model.Password);
-                isSuccess = (result == PasswordVerificationResult.Success);
+            if (user != null) {
+                
+                bool isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
 
-                if (isSuccess) { 
-                    admin.LastLogin = DateTime.Now;
-                    _context.Admins.Update(admin);
+                if (isAdmin) {
+                    var result = await _signInManager.PasswordSignInAsync(user, model.Password, isPersistent: false, lockoutOnFailure: false);
+                    if (result.Succeeded)
+                    {
+                        isSuccess = true;
+                    }
+                }
+                else
+                {
+                    ViewBag.ErrorMessage = "Bu panele giriş yetkiniz bulunmamaktadır.";
                 }
 
             }
@@ -66,7 +80,13 @@ namespace SilverSet.Areas.Admin.Controllers
             if (isSuccess) {
                 return RedirectToAction("Index", "Home", new { area = "Admin" }); // TODO ! buraya admin paneli gelecek unutma!!!!!!!
             }
-            ViewBag.ErrorMessage = "Geçersiz giriş denemesi!";
+
+            if(ViewBag.ErrorMessage == null)
+            {
+                ViewBag.ErrorMessage = "Kullanıcı adı veya şifre hatalı !";
+            }
+
+
             return View(model);
         }
     }
