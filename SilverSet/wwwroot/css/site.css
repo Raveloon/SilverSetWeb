@@ -1,31 +1,58 @@
+/* =============================================
+   SILVERSET STUDIOS - DESIGN TOKENS
+   Renk deðiþikliði için sadece bu bölümü düzenle
+   ============================================= */
+:root {
+    /* Arka planlar */
+    --color-bg: #0a0a0a;
+    --color-bg-card: rgba(18, 18, 18, 0.92);
+    --color-bg-input: rgba(15, 15, 15, 0.85);
+    /* Gümüþi aksan renkleri */
+    --color-accent: #c8c8c8;
+    --color-accent-bright: #ffffff;
+    --color-accent-dim: #888888;
+    /* Buton gradient */
+    --color-btn-from: #a0a0a0;
+    --color-btn-to: #ffffff;
+    /* Glow efektleri */
+    --color-glow: rgba(200, 200, 200, 0.15);
+    --color-glow-strong: rgba(255, 255, 255, 0.25);
+    /* Border */
+    --color-border: rgba(180, 180, 180, 0.15);
+    /* Yazý renkleri */
+    --color-text: #e2e8f0;
+    --color-text-muted: #6b7280;
+}
+/* ============================================= */
+
 html {
-  font-size: 14px;
+    font-size: 14px;
 }
 
 @media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
+    html {
+        font-size: 16px;
+    }
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
 }
 
 html {
-  position: relative;
-  min-height: 100%;
+    position: relative;
+    min-height: 100%;
 }
 
 body {
-  margin-bottom: 60px;
+    margin-bottom: 60px;
 }
 
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
-  text-align: end;
+    color: var(--bs-secondary-color);
+    text-align: end;
 }
 
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-  text-align: start;
+    text-align: start;
 }

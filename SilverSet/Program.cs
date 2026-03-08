@@ -7,7 +7,6 @@ namespace SilverSet
 {
     public class Program
     {
-        // Main metodu await kullanabilmek için async Task yapýldý
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
@@ -16,7 +15,7 @@ namespace SilverSet
             builder.Services.AddDbContext<SilverSetContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-            // Identity 
+            // Identity
             builder.Services.AddIdentity<AppUser, AppRole>(options =>
             {
                 options.Password.RequiredLength = 6;
@@ -24,13 +23,18 @@ namespace SilverSet
                 options.Password.RequireNonAlphanumeric = false;
                 options.Password.RequireUppercase = false;
                 options.Password.RequireLowercase = false;
+
+                // Lockout ayarlarý
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.AllowedForNewUsers = true;
             }).AddEntityFrameworkStores<SilverSetContext>();
 
             builder.Services.AddControllersWithViews();
 
             var app = builder.Build();
 
-            // To do : pipeline check et 
+            // Pipeline
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Home/Error");
@@ -41,70 +45,60 @@ namespace SilverSet
             app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();
-
             app.MapStaticAssets();
 
-            
             app.MapControllerRoute(
                 name: "areas",
                 pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 
-            
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}")
                 .WithStaticAssets();
 
-            
-            
-            
-            using (var scope = app.Services.CreateScope()) 
+            // Admin seeding
+            using (var scope = app.Services.CreateScope())
             {
                 var services = scope.ServiceProvider;
                 try
                 {
                     var userManager = services.GetRequiredService<UserManager<AppUser>>();
-                    var roleManager = services.GetRequiredService<RoleManager<AppRole>>(); 
+                    var roleManager = services.GetRequiredService<RoleManager<AppRole>>();
                     var configuration = services.GetRequiredService<IConfiguration>();
 
-                    
+                    // Admin rolü yoksa oluþtur
                     if (!await roleManager.RoleExistsAsync("Admin"))
                     {
                         await roleManager.CreateAsync(new AppRole { Name = "Admin" });
                     }
 
-                    // To do : Data seeding kontrol et veri sýzýntýsý !
-                    string adminName = configuration["AdminSetup:AdminName"] ;
-                    string adminPassword = configuration["AdminSetup:Password"] ;
+                    // TODO: Data seeding — appsettings'ten oku, veri sýzýntýsýna dikkat!
+                    string adminName = configuration["AdminSetup:AdminName"];
+                    string adminPassword = configuration["AdminSetup:Password"];
 
-                    
                     var user = await userManager.FindByNameAsync(adminName);
                     if (user == null)
                     {
                         var adminUser = new AppUser
                         {
                             UserName = adminName,
-                            FirstName = "Starter Admin",
-                            LastName = "001",
                             EmailConfirmed = true
                         };
 
                         var result = await userManager.CreateAsync(adminUser, adminPassword);
                         if (result.Succeeded)
                         {
-                            
                             await userManager.AddToRoleAsync(adminUser, "Admin");
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    
                     var logger = services.GetRequiredService<ILogger<Program>>();
                     logger.LogError(ex, "Seeding iþlemi sýrasýnda bir hata oluþtu.");
                 }
             }
-            
+
             await app.RunAsync();
         }
     }

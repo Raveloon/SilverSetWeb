@@ -426,3 +426,6 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# wwwroot third-party libraries
+wwwroot/lib/
