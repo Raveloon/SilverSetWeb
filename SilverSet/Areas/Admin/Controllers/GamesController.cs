@@ -87,6 +87,7 @@ public class GamesController : Controller
         {
             _context.FeaturedGames.Add(model);
             await _context.SaveChangesAsync();
+            TempData["Success"] = "Proje başarıyla eklendi.";
             return RedirectToAction(nameof(Index));
         }
         return View(model);
@@ -155,6 +156,7 @@ public class GamesController : Controller
         {
             _context.Update(model);
             await _context.SaveChangesAsync();
+            TempData["Success"] = "Proje başarıyla güncellendi.";
             return RedirectToAction(nameof(Index));
         }
         return View(model);
@@ -170,6 +172,7 @@ public class GamesController : Controller
             _context.FeaturedGames.Remove(game);
             await _context.SaveChangesAsync();
         }
+        TempData["Success"] = "Proje başarıyla silindi.";
         return RedirectToAction(nameof(Index));
     }
 }

@@ -72,7 +72,6 @@
                 border-color: var(--color-accent);
             }
 
-        /* Şifre alanı wrapper */
         .password-wrapper {
             position: relative;
             display: flex;
@@ -270,7 +269,9 @@
         </form>
     </div>
 
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.js"></script>
+    @await Html.PartialAsync("_ValidationScriptsPartial")
     <script>
         function togglePassword() {
             const input = document.getElementById('loginPassword');

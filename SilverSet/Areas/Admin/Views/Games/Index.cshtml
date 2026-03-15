@@ -133,7 +133,12 @@
             display: block;
         }
 </style>
-
+@if (TempData["Success"] != null)
+{
+    <div style="background:rgba(134,239,172,0.1); border:1px solid rgba(134,239,172,0.2); color:#86efac; padding:0.75rem 1rem; border-radius:8px; font-size:0.85rem; margin-bottom:1.5rem;">
+        <i class="bi bi-check-circle me-2"></i> @TempData["Success"]
+    </div>
+}
 <div class="page-header">
     <div>
         <div style="font-size:0.7rem; color:#555; letter-spacing:2px; text-transform:uppercase; margin-bottom:0.25rem">Content</div>

@@ -238,6 +238,10 @@ namespace SilverSet.Migrations
                     b.Property<int>("DisplayOrder")
                         .HasColumnType("int");
 
+                    b.Property<string>("ExternalLink")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("Genre")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");

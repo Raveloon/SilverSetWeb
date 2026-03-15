@@ -209,7 +209,10 @@ namespace SilverSet.Controllers
 
             foreach (var error in result.Errors)
             {
-                ModelState.AddModelError(string.Empty, error.Description);
+                if (error.Code == "DuplicateEmail" || error.Code == "DuplicateUserName")
+                    ModelState.AddModelError(string.Empty, "Bu bilgilerle kayıt oluşturulamadı.");
+                else
+                    ModelState.AddModelError(string.Empty, error.Description);
             }
 
             return View(model);

@@ -155,7 +155,7 @@
 </div>
 
 <div class="form-card">
-    <form asp-area="Admin" asp-controller="Games" asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data">
+    <form asp-area="Admin" asp-controller="Games" asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data" novalidate>
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Id" />
 
@@ -208,6 +208,11 @@
             </div>
 
             <input type="hidden" asp-for="ImagePath" />
+
+            <div class="col-12">
+                <label class="form-label">External Link</label>
+                <input asp-for="ExternalLink" class="form-control" placeholder="https://fab.com/..." />
+            </div>
 
             <div class="col-md-6">
                 <label class="form-label">Display Order</label>

@@ -153,7 +153,7 @@
 </div>
 
 <div class="form-card">
-    <form asp-area="Admin" asp-controller="Games" asp-action="Create" method="post" enctype="multipart/form-data">
+    <form asp-area="Admin" asp-controller="Games" asp-action="Create" method="post" enctype="multipart/form-data" novalidate>
         @Html.AntiForgeryToken()
 
         <div class="row g-3">
@@ -197,7 +197,10 @@
                 </div>
                 <input type="file" id="imageFile" name="imageFile" accept=".jpg,.jpeg,.png,.webp" style="display:none" />
             </div>
-
+            <div class="col-12">
+                <label class="form-label">External Link</label>
+                <input asp-for="ExternalLink" class="form-control" placeholder="https://fab.com/..." />
+            </div>
             <div class="col-md-6">
                 <label class="form-label">Display Order</label>
                 <input asp-for="DisplayOrder" class="form-control" type="number" placeholder="1" />

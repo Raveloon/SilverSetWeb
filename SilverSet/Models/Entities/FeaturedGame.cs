@@ -25,5 +25,8 @@ namespace SilverSet.Models.Entities
         public int DisplayOrder { get; set; }
 
         public bool IsVisible { get; set; }
+
+        [MaxLength(500)]
+        public string? ExternalLink { get; set; }
     }
 }
