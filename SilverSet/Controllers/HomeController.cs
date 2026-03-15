@@ -1,21 +1,34 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Identity;
 using SilverSet.Models;
+using SilverSet.Models.Entities;
+using Microsoft.EntityFrameworkCore;
+using SilverSet.Data;
+using System.Threading.Tasks;
+
 
 namespace SilverSet.Controllers;
 
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
-
-    public HomeController(ILogger<HomeController> logger)
+    private readonly UserManager<AppUser> _userManager;
+    private readonly SilverSetContext _context;
+    public HomeController(ILogger<HomeController> logger, UserManager<AppUser> userManager,SilverSetContext context)
     {
         _logger = logger;
+        _userManager = userManager;
+        _context = context; 
     }
 
-    public IActionResult Index()
+    public async Task<IActionResult> Index()
     {
-        return View();
+        ViewBag.UserCount = _userManager.Users.Count();
+         
+        var games = await _context.FeaturedGames.Where(g => g.IsVisible).OrderBy(g => g.DisplayOrder).ToListAsync();    
+
+        return View(games);
     }
 
     public IActionResult Privacy()

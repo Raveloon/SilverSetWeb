@@ -23,14 +23,33 @@ namespace SilverSet
                 options.Password.RequireNonAlphanumeric = false;
                 options.Password.RequireUppercase = false;
                 options.Password.RequireLowercase = false;
+                options.User.RequireUniqueEmail = true;
 
                 // Lockout ayarlarý
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
                 options.Lockout.MaxFailedAccessAttempts = 5;
                 options.Lockout.AllowedForNewUsers = true;
-            }).AddEntityFrameworkStores<SilverSetContext>();
+            }).AddEntityFrameworkStores<SilverSetContext>().AddDefaultTokenProviders();
 
             builder.Services.AddControllersWithViews();
+
+            builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
+            {
+                options.TokenLifespan = TimeSpan.FromMinutes(15);
+            });
+
+            builder.Services.ConfigureApplicationCookie(options =>
+            {
+                options.LoginPath = "/Admin/Account/Login";
+                options.AccessDeniedPath = "/Admin/Account/Login";
+
+                // Güvenlik ayarlarý
+                options.Cookie.HttpOnly = true;      
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;  
+                options.Cookie.SameSite = SameSiteMode.Strict; 
+                options.ExpireTimeSpan = TimeSpan.FromHours(2); 
+                options.SlidingExpiration = false;     
+            });
 
             var app = builder.Build();
 
@@ -41,6 +60,23 @@ namespace SilverSet
                 app.UseHsts();
             }
 
+            app.Use(async (context, next) =>
+            {
+                var path = context.Request.Path.Value?.ToLower() ?? "";
+
+                bool isSensitive = path.StartsWith("/account") ||
+                                   path.StartsWith("/admin") ||
+                                   path.StartsWith("/manage");
+
+                if (isSensitive)
+                {
+                    context.Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate";
+                    context.Response.Headers["Pragma"] = "no-cache";
+                    context.Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
+                }
+
+                await next();
+            });
             app.UseHttpsRedirection();
             app.UseRouting();
             app.UseAuthentication();

@@ -62,7 +62,7 @@ namespace SilverSet.Areas.Admin.Controllers
                 }
                 else
                 {
-                    ViewBag.ErrorMessage = "Bu panele giriş yetkiniz bulunmamaktadır.";
+                    ViewBag.ErrorMessage = "Kullanıcı adı veya şifre hatalı.";
                 }
 
             }
@@ -78,7 +78,7 @@ namespace SilverSet.Areas.Admin.Controllers
             await _context.SaveChangesAsync();
 
             if (isSuccess) {
-                return RedirectToAction("Index", "Home", new { area = "Admin" }); // TODO ! buraya admin paneli gelecek unutma!!!!!!!
+                return RedirectToAction("Index", "Dashboard", new { area = "Admin" });
             }
 
             if(ViewBag.ErrorMessage == null)

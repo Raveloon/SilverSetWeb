@@ -222,7 +222,7 @@
             <div class="mb-4">
                 <div class="d-flex justify-content-between align-items-center">
                     <label asp-for="Password" class="form-label text-accent fw-medium">PASSWORD</label>
-                    <a href="#" class="text-accent-dim text-decoration-none small link-hover">FORGOT ACCESS?</a>
+                    <a asp-action="ForgotPassword" asp-controller="Account" class="text-accent-dim text-decoration-none small link-hover">FORGOT ACCESS?</a>
                 </div>
                 <div class="password-wrapper">
                     <input asp-for="Password"

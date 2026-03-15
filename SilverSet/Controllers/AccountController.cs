@@ -46,7 +46,7 @@ namespace SilverSet.Controllers
                 }
                 else
                 {
-                    string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Bilinmiyor ";
+                    string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Bilinmiyor";
 
                     var log = new UserLoginLog
                     {
@@ -67,6 +67,7 @@ namespace SilverSet.Controllers
             }
             return View(model);
         }
+
         [HttpGet]
         public IActionResult Login()
         {
@@ -77,15 +78,12 @@ namespace SilverSet.Controllers
         public async Task<IActionResult> Login(LoginModel model)
         {
             if (!ModelState.IsValid)
-            {
                 return View(model);
-            }
 
             string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "bilinmiyor";
             bool isSuccess = false;
 
             var user = await _userManager.FindByNameAsync(model.UserName);
-
             string logEmail = user != null ? user.Email : "Hesabın Emaili Bulunamadı";
 
             if (user != null)
@@ -110,7 +108,7 @@ namespace SilverSet.Controllers
                 ModelState.AddModelError(string.Empty, "Kullanıcı adı veya şifre hatalı");
             }
 
-            var Userloginlog = new UserLoginLog
+            var userLoginLog = new UserLoginLog
             {
                 UserName = model.UserName,
                 Email = logEmail,
@@ -118,22 +116,109 @@ namespace SilverSet.Controllers
                 IsSuccessful = isSuccess,
                 IpAddress = clientIp
             };
-            _context.UserLoginLogs.Add(Userloginlog);
-
+            _context.UserLoginLogs.Add(userLoginLog);
             await _context.SaveChangesAsync();
+
             if (isSuccess)
-            {
                 return RedirectToAction("Index", "Home");
-            }
 
             return View(model);
         }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
             return RedirectToAction("Index", "Home");
+        }
+
+        [HttpGet]
+        public IActionResult ForgotPassword()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+                return View(model);
+
+            var user = await _userManager.FindByEmailAsync(model.Email);
+
+            if (user == null)
+                return RedirectToAction(nameof(ForgotPasswordConfirmation));
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var resetLink = Url.Action("ResetPassword", "Account",
+                new { token, email = user.Email }, Request.Scheme);
+
+            var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AccountController>>();
+            logger.LogInformation("ŞİFRE SIFIRLAMA LİNKİ: {Email} - {Link}", user.Email, resetLink);
+
+            return RedirectToAction(nameof(ForgotPasswordConfirmation));
+        }
+
+        [HttpGet]
+        public IActionResult ForgotPasswordConfirmation()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public IActionResult ResetPassword(string token, string email)
+        {
+            if (token == null || email == null)
+                return RedirectToAction("Login");
+
+            var model = new ResetPasswordViewModel { Token = token, Email = email };
+            return View(model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+                return View(model);
+
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+                return RedirectToAction(nameof(ResetPasswordConfirmation));
+
+            var result = await _userManager.ResetPasswordAsync(user, model.Token, model.Password);
+
+            if (result.Succeeded)
+            {
+                string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "bilinmiyor";
+                var log = new UserLoginLog
+                {
+                    UserName = user.UserName,
+                    Email = user.Email,
+                    LoginTime = DateTime.UtcNow,
+                    IsSuccessful = true,
+                    IpAddress = clientIp
+                };
+                _context.UserLoginLogs.Add(log);
+                await _context.SaveChangesAsync();
+
+                return RedirectToAction(nameof(ResetPasswordConfirmation));
+            }
+
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+
+            return View(model);
+        }
+
+        [HttpGet]
+        public IActionResult ResetPasswordConfirmation()
+        {
+            return View();
         }
     }
 }
