@@ -1,0 +1,295 @@
+﻿@model List<SilverSet.Models.Entities.UserLoginLog>
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    ViewData["Title"] = "Login Logs";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .badge-success {
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        padding: 0.2rem 0.6rem;
+        border-radius: 4px;
+        background: rgba(134,239,172,0.1);
+        color: #86efac;
+        border: 1px solid rgba(134,239,172,0.2);
+    }
+
+    .badge-fail {
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        padding: 0.2rem 0.6rem;
+        border-radius: 4px;
+        background: rgba(248,113,113,0.1);
+        color: #f87171;
+        border: 1px solid rgba(248,113,113,0.2);
+    }
+
+    .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .admin-table th {
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #555;
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid var(--admin-border);
+            text-align: left;
+        }
+
+        .admin-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            font-size: 0.8rem;
+            color: #ccc;
+            vertical-align: middle;
+        }
+
+        .admin-table tr:hover td {
+            background: rgba(255,255,255,0.02);
+        }
+
+    .stat-card {
+        background: rgba(255,255,255,0.02);
+        border: 1px solid var(--admin-border);
+        border-radius: 10px;
+        padding: 1.25rem 1.5rem;
+    }
+
+    .stat-label {
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #555;
+        margin-bottom: 0.4rem;
+    }
+
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: white;
+    }
+
+    .filter-btn {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.4rem 0.9rem;
+        border-radius: 6px;
+        border: 1px solid var(--admin-border);
+        background: transparent;
+        color: #666;
+        text-decoration: none;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+
+        .filter-btn:hover, .filter-btn.active {
+            color: white;
+            border-color: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.05);
+        }
+
+    .search-input {
+        background: rgba(255,255,255,0.04) !important;
+        border: 1px solid var(--admin-border) !important;
+        color: white !important;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        padding: 0.4rem 0.85rem;
+    }
+
+        .search-input:focus {
+            border-color: rgba(255,255,255,0.2) !important;
+            box-shadow: none !important;
+            outline: none;
+            background: rgba(255,255,255,0.06) !important;
+        }
+
+        .search-input::placeholder {
+            color: #444 !important;
+        }
+
+    .page-btn {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.35rem 0.75rem;
+        border-radius: 6px;
+        border: 1px solid var(--admin-border);
+        background: transparent;
+        color: #666;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+        .page-btn:hover, .page-btn.active {
+            color: white;
+            border-color: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.05);
+        }
+
+        .page-btn.disabled {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+    .date-input {
+        background: rgba(255,255,255,0.04) !important;
+        border: 1px solid var(--admin-border) !important;
+        color: white !important;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        padding: 0.4rem 0.85rem;
+        color-scheme: dark;
+    }
+
+        .date-input:focus {
+            border-color: rgba(255,255,255,0.2) !important;
+            box-shadow: none !important;
+            outline: none;
+        }
+</style>
+
+<div style="margin-bottom:1.5rem">
+    <div style="font-size:0.7rem; color:#555; letter-spacing:2px; text-transform:uppercase; margin-bottom:0.25rem">Security</div>
+    <div style="font-size:1.1rem; font-weight:700; color:white">Login Logs</div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-label">Total Logins</div>
+            <div class="stat-value">@ViewBag.TotalCount</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-label">Failed Attempts</div>
+            <div class="stat-value" style="color:#f87171">@ViewBag.FailedCount</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-label">Today</div>
+            <div class="stat-value">@ViewBag.TodayCount</div>
+        </div>
+    </div>
+</div>
+
+<form method="get" asp-area="Admin" asp-controller="Logs" asp-action="Index">
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <a href="@Url.Action("Index", "Logs", new { area = "Admin", filter = "", search = ViewBag.Search, timeFilter = ViewBag.TimeFilter, specificDate = ViewBag.SpecificDate })"
+           class="filter-btn @(ViewBag.Filter == null || ViewBag.Filter == "" ? "active" : "")">All</a>
+        <a href="@Url.Action("Index", "Logs", new { area = "Admin", filter = "success", search = ViewBag.Search, timeFilter = ViewBag.TimeFilter, specificDate = ViewBag.SpecificDate })"
+           class="filter-btn @(ViewBag.Filter == "success" ? "active" : "")">Success</a>
+        <a href="@Url.Action("Index", "Logs", new { area = "Admin", filter = "failed", search = ViewBag.Search, timeFilter = ViewBag.TimeFilter, specificDate = ViewBag.SpecificDate })"
+           class="filter-btn @(ViewBag.Filter == "failed" ? "active" : "")">Failed</a>
+
+        <div style="width:1px; background:var(--admin-border); margin: 0 0.25rem;"></div>
+
+        <a href="@Url.Action("Index", "Logs", new { area = "Admin", filter = ViewBag.Filter, search = ViewBag.Search, timeFilter = "" })"
+           class="filter-btn @(ViewBag.TimeFilter == null || ViewBag.TimeFilter == "" ? "active" : "")">All Time</a>
+        <a href="@Url.Action("Index", "Logs", new { area = "Admin", filter = ViewBag.Filter, search = ViewBag.Search, timeFilter = "7d" })"
+           class="filter-btn @(ViewBag.TimeFilter == "7d" ? "active" : "")">7 Days</a>
+        <a href="@Url.Action("Index", "Logs", new { area = "Admin", filter = ViewBag.Filter, search = ViewBag.Search, timeFilter = "15d" })"
+           class="filter-btn @(ViewBag.TimeFilter == "15d" ? "active" : "")">15 Days</a>
+        <a href="@Url.Action("Index", "Logs", new { area = "Admin", filter = ViewBag.Filter, search = ViewBag.Search, timeFilter = "1y" })"
+           class="filter-btn @(ViewBag.TimeFilter == "1y" ? "active" : "")">1 Year</a>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 mb-4">
+        <input type="hidden" name="filter" value="@ViewBag.Filter" />
+        <input type="hidden" name="timeFilter" value="@ViewBag.TimeFilter" />
+        <input type="text" name="search" value="@ViewBag.Search"
+               class="search-input form-control"
+               placeholder="Search username, email or IP..."
+               style="max-width:280px;" />
+        <input type="date" name="specificDate" value="@ViewBag.SpecificDate"
+               class="date-input form-control"
+               style="max-width:180px;" />
+        <button type="submit" class="filter-btn">Search</button>
+        <a href="@Url.Action("Index", "Logs", new { area = "Admin" })" class="filter-btn">Reset</a>
+    </div>
+</form>
+<div style="font-size:0.75rem; color:#555; margin-bottom:0.75rem;">
+    Showing @((ViewBag.CurrentPage - 1) * 20 + 1)–@((ViewBag.CurrentPage - 1) * 20 + Model.Count) of @ViewBag.FilteredCount results
+    @if (!string.IsNullOrEmpty(ViewBag.Search as string) || !string.IsNullOrEmpty(ViewBag.Filter as string) || !string.IsNullOrEmpty(ViewBag.TimeFilter as string) || !string.IsNullOrEmpty(ViewBag.SpecificDate as string))
+    {
+        <span style="color:#888"> — filtered</span>
+    }
+</div>
+@if (!Model.Any())
+{
+    <div style="text-align:center; padding:4rem 2rem; color:#555;">
+        <i class="bi bi-shield" style="font-size:2.5rem; display:block; margin-bottom:1rem;"></i>
+        <div>No logs found</div>
+    </div>
+}
+else
+{
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>IP Address</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var log in Model)
+            {
+                <tr>
+                    <td style="color:#555; white-space:nowrap">@log.LoginTime.ToString("dd.MM.yyyy HH:mm:ss")</td>
+                    <td style="color:white; font-weight:600">@log.UserName</td>
+                    <td>@log.Email</td>
+                    <td style="font-family:monospace; font-size:0.75rem">@log.IpAddress</td>
+                    <td>
+                        @if (log.IsSuccessful)
+                        {
+                            <span class="badge-success">Success</span>
+                        }
+                        else
+                        {
+                            <span class="badge-fail">Failed</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="d-flex align-items-center gap-2 mt-3">
+        @if (ViewBag.CurrentPage > 1)
+        {
+            <a href="@Url.Action("Index", "Logs", new { area = "Admin", page = ViewBag.CurrentPage - 1, filter = ViewBag.Filter, search = ViewBag.Search, timeFilter = ViewBag.TimeFilter, specificDate = ViewBag.SpecificDate })"
+               class="page-btn">← Prev</a>
+        }
+        else
+        {
+            <span class="page-btn disabled">← Prev</span>
+        }
+
+        <span style="font-size:0.75rem; color:#555;">Page @ViewBag.CurrentPage / @ViewBag.TotalPages</span>
+
+        @if (ViewBag.CurrentPage < ViewBag.TotalPages)
+        {
+            <a href="@Url.Action("Index", "Logs", new { area = "Admin", page = ViewBag.CurrentPage + 1, filter = ViewBag.Filter, search = ViewBag.Search, timeFilter = ViewBag.TimeFilter, specificDate = ViewBag.SpecificDate })"
+               class="page-btn">Next →</a>
+        }
+        else
+        {
+            <span class="page-btn disabled">Next →</span>
+        }
+    </div>
+}
