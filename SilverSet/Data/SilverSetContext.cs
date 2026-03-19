@@ -8,7 +8,8 @@ namespace SilverSet.Data
         public SilverSetContext(DbContextOptions<SilverSetContext> options) : base(options)
         {
         }
-        public DbSet<LoginLog> LoginLogs { get; set; }
+        public DbSet<PasswordResetLog> PasswordResetLogs { get; set; }
+        
         public DbSet<UserLoginLog> UserLoginLogs { get; set; }
 
         public DbSet<FeaturedGame> FeaturedGames { get; set; }

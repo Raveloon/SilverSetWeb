@@ -46,8 +46,7 @@ namespace SilverSet.Controllers
                 }
                 else
                 {
-                    string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Bilinmiyor";
-
+                    string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "bilinmiyor";
                     var log = new UserLoginLog
                     {
                         UserName = model.UserName,
@@ -61,7 +60,10 @@ namespace SilverSet.Controllers
 
                     foreach (var error in result.Errors)
                     {
-                        ModelState.AddModelError(string.Empty, error.Description);
+                        if (error.Code == "DuplicateEmail" || error.Code == "DuplicateUserName")
+                            ModelState.AddModelError(string.Empty, "Bu bilgilerle kayıt oluşturulamadı.");
+                        else
+                            ModelState.AddModelError(string.Empty, error.Description);
                     }
                 }
             }
@@ -91,17 +93,11 @@ namespace SilverSet.Controllers
                 var result = await _signInManager.PasswordSignInAsync(user.UserName, model.Password, model.RememberMe, lockoutOnFailure: true);
 
                 if (result.Succeeded)
-                {
                     isSuccess = true;
-                }
                 else if (result.IsLockedOut)
-                {
                     ModelState.AddModelError(string.Empty, "Hesabınız geçici olarak kilitlendi. Lütfen daha sonra tekrar deneyiniz.");
-                }
                 else
-                {
                     ModelState.AddModelError(string.Empty, "Kullanıcı adı veya şifre hatalı");
-                }
             }
             else
             {
@@ -146,14 +142,38 @@ namespace SilverSet.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
+            string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "bilinmiyor";
             var user = await _userManager.FindByEmailAsync(model.Email);
 
             if (user == null)
+            {
+                _context.PasswordResetLogs.Add(new PasswordResetLog
+                {
+                    UserName = "Unknown",
+                    Email = model.Email,
+                    ResetTime = DateTime.UtcNow,
+                    IsSuccessful = false,
+                    IpAddress = clientIp,
+                    Note = "Reset requested — email not found"
+                });
+                await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(ForgotPasswordConfirmation));
+            }
 
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             var resetLink = Url.Action("ResetPassword", "Account",
                 new { token, email = user.Email }, Request.Scheme);
+
+            _context.PasswordResetLogs.Add(new PasswordResetLog
+            {
+                UserName = user.UserName,
+                Email = user.Email,
+                ResetTime = DateTime.UtcNow,
+                IsSuccessful = false,
+                IpAddress = clientIp,
+                Note = "Reset link sent — awaiting completion"
+            });
+            await _context.SaveChangesAsync();
 
             var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AccountController>>();
             logger.LogInformation("ŞİFRE SIFIRLAMA LİNKİ: {Email} - {Link}", user.Email, resetLink);
@@ -190,22 +210,33 @@ namespace SilverSet.Controllers
 
             var result = await _userManager.ResetPasswordAsync(user, model.Token, model.Password);
 
+            string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "bilinmiyor";
+
             if (result.Succeeded)
             {
-                string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "bilinmiyor";
-                var log = new UserLoginLog
+                _context.PasswordResetLogs.Add(new PasswordResetLog
                 {
                     UserName = user.UserName,
                     Email = user.Email,
-                    LoginTime = DateTime.UtcNow,
+                    ResetTime = DateTime.UtcNow,
                     IsSuccessful = true,
-                    IpAddress = clientIp
-                };
-                _context.UserLoginLogs.Add(log);
+                    IpAddress = clientIp,
+                    Note = "Password reset completed"
+                });
                 await _context.SaveChangesAsync();
-
                 return RedirectToAction(nameof(ResetPasswordConfirmation));
             }
+
+            _context.PasswordResetLogs.Add(new PasswordResetLog
+            {
+                UserName = user.UserName,
+                Email = user.Email,
+                ResetTime = DateTime.UtcNow,
+                IsSuccessful = false,
+                IpAddress = clientIp,
+                Note = "Invalid or expired token"
+            });
+            await _context.SaveChangesAsync();
 
             foreach (var error in result.Errors)
             {

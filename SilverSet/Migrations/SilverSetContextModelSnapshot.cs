@@ -267,7 +267,7 @@ namespace SilverSet.Migrations
                     b.ToTable("FeaturedGames");
                 });
 
-            modelBuilder.Entity("SilverSet.Models.Entities.LoginLog", b =>
+            modelBuilder.Entity("SilverSet.Models.Entities.PasswordResetLog", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -286,12 +286,19 @@ namespace SilverSet.Migrations
                     b.Property<bool>("IsSuccessful")
                         .HasColumnType("bit");
 
-                    b.Property<DateTime>("LoginTime")
+                    b.Property<string>("Note")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ResetTime")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("LoginLogs");
+                    b.ToTable("PasswordResetLogs");
                 });
 
             modelBuilder.Entity("SilverSet.Models.Entities.UserLoginLog", b =>

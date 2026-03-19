@@ -11,7 +11,6 @@ namespace SilverSet.Areas.Admin.Controllers
     public class AccountController : Controller
     {
         private readonly SilverSetContext _context;
-
         private readonly SignInManager<AppUser> _signInManager;
         private readonly UserManager<AppUser> _userManager;
 
@@ -21,71 +20,66 @@ namespace SilverSet.Areas.Admin.Controllers
             _signInManager = signInManager;
             _userManager = userManager;
         }
+
         [HttpGet]
         public IActionResult Login()
         {
             return View();
         }
+
         [ValidateAntiForgeryToken]
         [HttpPost]
-        public async Task<IActionResult> Login(LoginViewModel model) {
-
-            if (!ModelState.IsValid) {
+        public async Task<IActionResult> Login(LoginViewModel model)
+        {
+            if (!ModelState.IsValid)
                 return View(model);
-            }
-            string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown IP"; //Todo : IP adresi alma işlemi daha güvenilir hale getirilebilir, proxy durumları vs. için ek kontroller eklenebilir.
 
+            string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown IP";
 
-            var recentFailures = await _context.LoginLogs
-        .Where(x => x.IpAddress == clientIp && !x.IsSuccessful && x.LoginTime > DateTime.Now.AddMinutes(-15))
-        .CountAsync();
+            var recentFailures = await _context.UserLoginLogs
+                .AsNoTracking()
+                .CountAsync(x => x.IpAddress == clientIp && !x.IsSuccessful && x.LoginTime > DateTime.UtcNow.AddMinutes(-15));
 
             if (recentFailures >= 5)
             {
                 ViewBag.ErrorMessage = "Çok fazla başarısız giriş denemesi tespit edildi. Lütfen 15 dakika sonra tekrar deneyin.";
                 return View(model);
             }
-            var user = await _userManager.FindByNameAsync(model.AdminName);
 
+            var user = await _userManager.FindByNameAsync(model.AdminName);
             bool isSuccess = false;
 
-            if (user != null) {
-                
+            if (user != null)
+            {
                 bool isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
-
-                if (isAdmin) {
+                if (isAdmin)
+                {
                     var result = await _signInManager.PasswordSignInAsync(user, model.Password, isPersistent: false, lockoutOnFailure: false);
                     if (result.Succeeded)
-                    {
                         isSuccess = true;
-                    }
                 }
                 else
                 {
                     ViewBag.ErrorMessage = "Kullanıcı adı veya şifre hatalı.";
                 }
-
             }
-            var loginLog = new LoginLog
+
+            var loginLog = new UserLoginLog
             {
-                Email = model.AdminName ?? "Bilinmeyen Deneme",
-                LoginTime = DateTime.Now,
+                UserName = model.AdminName ?? "Bilinmeyen Deneme",
+                Email = user?.Email ?? string.Empty,
+                LoginTime = DateTime.UtcNow,
                 IsSuccessful = isSuccess,
                 IpAddress = clientIp
             };
-            _context.LoginLogs.Add(loginLog);
-
+            _context.UserLoginLogs.Add(loginLog);
             await _context.SaveChangesAsync();
 
-            if (isSuccess) {
+            if (isSuccess)
                 return RedirectToAction("Index", "Dashboard", new { area = "Admin" });
-            }
 
-            if(ViewBag.ErrorMessage == null)
-            {
-                ViewBag.ErrorMessage = "Kullanıcı adı veya şifre hatalı !";
-            }
-
+            if (ViewBag.ErrorMessage == null)
+                ViewBag.ErrorMessage = "Kullanıcı adı veya şifre hatalı!";
 
             return View(model);
         }
