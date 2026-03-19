@@ -217,10 +217,10 @@
         </a>
 
         <div class="nav-section-label">Content</div>
-        <a asp-area="Admin" asp-controller="Games" asp-action="Index"
-           class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Games" ? "active" : "")">
-            <i class="bi bi-collection"></i> Projects
-        </a>
+            <a asp-area="Admin" asp-controller="Assets" asp-action="Index"
+               class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Assets" ? "active" : "")">
+                <i class="bi bi-collection"></i> FAB Projects
+            </a>
 
         <div class="nav-section-label">Users</div>
         <a href="#" class="sidebar-link">

@@ -8,13 +8,13 @@ namespace SilverSet.Areas.Admin.Controllers;
 
 [Area("Admin")]
 [Authorize(Roles = "Admin")]
-public class GamesController : Controller
+public class AssetsController : Controller
 {
     private readonly SilverSetContext _context;
 
     private readonly IWebHostEnvironment _env;
 
-    public GamesController(SilverSetContext context, IWebHostEnvironment env)
+    public AssetsController(SilverSetContext context, IWebHostEnvironment env)
     {
         _context = context;
         _env = env;

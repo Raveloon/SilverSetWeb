@@ -1,10 +1,12 @@
 ﻿@model SilverSet.Models.Entities.FeaturedGame
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @{
-    ViewData["Title"] = "Add Project";
+    ViewData["Title"] = "Edit Project";
     Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
 }
+
 <style>
+    /* Create.cshtml ile aynı style bloğu */
     .form-card {
         background: rgba(255,255,255,0.02);
         border: 1px solid var(--admin-border);
@@ -31,7 +33,7 @@
         padding: 0.6rem 0.85rem;
     }
 
-        .form-control:focus, .form-select:focus {
+        .form-control:focus {
             background: rgba(255,255,255,0.06) !important;
             border-color: rgba(255,255,255,0.2) !important;
             box-shadow: none !important;
@@ -51,6 +53,24 @@
             background-color: white;
             border-color: white;
         }
+
+    .form-check-label {
+        font-size: 0.875rem;
+        color: #9ca3af;
+    }
+
+    .btn-submit {
+        background: white;
+        color: #0a0a0a;
+        font-weight: 700;
+        font-size: 0.8rem;
+        letter-spacing: 1px;
+        padding: 0.6rem 1.5rem;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
 
     .upload-area {
         border: 1px dashed rgba(255,255,255,0.15);
@@ -104,24 +124,6 @@
         font-size: 0.78rem;
         color: #9ca3af;
     }
-    .form-check-label {
-        font-size: 0.875rem;
-        color: #9ca3af;
-    }
-
-    .btn-submit {
-        background: white;
-        color: #0a0a0a;
-        font-weight: 700;
-        font-size: 0.8rem;
-        letter-spacing: 1px;
-        padding: 0.6rem 1.5rem;
-        border-radius: 8px;
-        border: none;
-        cursor: pointer;
-        transition: opacity 0.2s;
-    }
-
         .btn-submit:hover {
             opacity: 0.85;
         }
@@ -149,37 +151,34 @@
 
 <div style="margin-bottom:1.5rem">
     <div style="font-size:0.7rem; color:#555; letter-spacing:2px; text-transform:uppercase; margin-bottom:0.25rem">Projects</div>
-    <div style="font-size:1.1rem; font-weight:700; color:white">Add New Project</div>
+    <div style="font-size:1.1rem; font-weight:700; color:white">Edit: @Model.Title</div>
 </div>
 
 <div class="form-card">
-    <form asp-area="Admin" asp-controller="Games" asp-action="Create" method="post" enctype="multipart/form-data" novalidate>
+    <form asp-area="Admin" asp-controller="Assets" asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data" novalidate>
         @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
 
         <div class="row g-3">
             <div class="col-12">
                 <label class="form-label">Title *</label>
-                <input asp-for="Title" class="form-control" placeholder="Project name" />
+                <input asp-for="Title" class="form-control" />
                 <span asp-validation-for="Title" class="text-danger"></span>
             </div>
 
             <div class="col-12">
                 <label class="form-label">Description</label>
-                <textarea asp-for="Description" class="form-control" rows="3" placeholder="Short description..."></textarea>
+                <textarea asp-for="Description" class="form-control" rows="3"></textarea>
             </div>
-
-            <div class="col-md-6">
-                <label class="form-label">Genre</label>
-                <input asp-for="Genre" class="form-control" placeholder="e.g. Action, RPG" />
-            </div>
-
-            <div class="col-md-6">
-                <label class="form-label">Status</label>
-                <input asp-for="Status" class="form-control" placeholder="e.g. Coming Soon, Released" />
-            </div>
-
             <div class="col-12">
                 <label class="form-label">Project Image</label>
+                @if (!string.IsNullOrEmpty(Model.ImagePath))
+                {
+                    <div style="margin-bottom:0.75rem; display:flex; align-items:center; gap:0.75rem;">
+                        <img src="@Model.ImagePath" style="width:60px; height:60px; object-fit:cover; border-radius:6px; border:1px solid rgba(255,255,255,0.1);" />
+                        <span style="font-size:0.75rem; color:#555;">Mevcut görsel — yeni yüklerseniz değişir</span>
+                    </div>
+                }
                 <div class="upload-area" id="uploadArea" onclick="document.getElementById('imageFile').click()">
                     <div class="upload-icon">
                         <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -197,13 +196,27 @@
                 </div>
                 <input type="file" id="imageFile" name="imageFile" accept=".jpg,.jpeg,.png,.webp" style="display:none" />
             </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Genre</label>
+                <input asp-for="Genre" class="form-control" />
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Status</label>
+                <input asp-for="Status" class="form-control" />
+            </div>
+
+            <input type="hidden" asp-for="ImagePath" />
+
             <div class="col-12">
                 <label class="form-label">External Link</label>
                 <input asp-for="ExternalLink" class="form-control" placeholder="https://fab.com/..." />
             </div>
+
             <div class="col-md-6">
                 <label class="form-label">Display Order</label>
-                <input asp-for="DisplayOrder" class="form-control" type="number" placeholder="1" />
+                <input asp-for="DisplayOrder" class="form-control" type="number" />
             </div>
 
             <div class="col-12">
@@ -215,8 +228,8 @@
         </div>
 
         <div class="d-flex gap-2 mt-4">
-            <button type="submit" class="btn-submit">Save Project</button>
-            <a asp-area="Admin" asp-controller="Games" asp-action="Index" class="btn-cancel">Cancel</a>
+            <button type="submit" class="btn-submit">Save Changes</button>
+            <a asp-area="Admin" asp-controller="Assets" asp-action="Index" class="btn-cancel">Cancel</a>
         </div>
     </form>
 </div>
