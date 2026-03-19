@@ -1,0 +1,309 @@
+﻿@model List<SilverSet.Models.Entities.AppUser>
+@{
+    ViewData["Title"] = "Users";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .admin-table th {
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #555;
+        padding: 0.6rem 1rem;
+        border-bottom: 1px solid var(--admin-border);
+        text-align: left;
+    }
+
+    .admin-table td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+        font-size: 0.8rem;
+        color: #ccc;
+        vertical-align: middle;
+    }
+
+    .admin-table tr:hover td {
+        background: rgba(255,255,255,0.02);
+    }
+
+    .badge-admin {
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        padding: 0.2rem 0.6rem;
+        border-radius: 4px;
+        background: rgba(251,191,36,0.1);
+        color: #fbbf24;
+        border: 1px solid rgba(251,191,36,0.2);
+    }
+
+    .badge-user {
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        padding: 0.2rem 0.6rem;
+        border-radius: 4px;
+        background: rgba(255,255,255,0.05);
+        color: #555;
+        border: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .badge-banned {
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        padding: 0.2rem 0.6rem;
+        border-radius: 4px;
+        background: rgba(248,113,113,0.1);
+        color: #f87171;
+        border: 1px solid rgba(248,113,113,0.2);
+    }
+
+    .btn-action {
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 0.25rem 0.6rem;
+        border-radius: 5px;
+        border: 1px solid var(--admin-border);
+        background: transparent;
+        color: #666;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+    .btn-action:hover {
+        color: white;
+        border-color: rgba(255,255,255,0.2);
+    }
+
+    .btn-danger {
+        color: #f87171;
+        border-color: rgba(248,113,113,0.2);
+    }
+
+    .btn-danger:hover {
+        background: rgba(248,113,113,0.08);
+        color: #f87171;
+    }
+
+    .btn-success {
+        color: #86efac;
+        border-color: rgba(134,239,172,0.2);
+    }
+
+    .btn-success:hover {
+        background: rgba(134,239,172,0.08);
+        color: #86efac;
+    }
+
+    .filter-btn {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.4rem 0.9rem;
+        border-radius: 6px;
+        border: 1px solid var(--admin-border);
+        background: transparent;
+        color: #666;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .filter-btn:hover {
+        color: white;
+        border-color: rgba(255,255,255,0.2);
+        background: rgba(255,255,255,0.05);
+    }
+
+    .search-input {
+        background: rgba(255,255,255,0.04) !important;
+        border: 1px solid var(--admin-border) !important;
+        color: white !important;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        padding: 0.4rem 0.85rem;
+    }
+
+    .search-input:focus {
+        border-color: rgba(255,255,255,0.2) !important;
+        box-shadow: none !important;
+        outline: none;
+        background: rgba(255,255,255,0.06) !important;
+    }
+
+    .search-input::placeholder {
+        color: #444 !important;
+    }
+
+    .page-btn {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.35rem 0.75rem;
+        border-radius: 6px;
+        border: 1px solid var(--admin-border);
+        background: transparent;
+        color: #666;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .page-btn:hover {
+        color: white;
+        border-color: rgba(255,255,255,0.2);
+        background: rgba(255,255,255,0.05);
+    }
+
+    .page-btn.disabled {
+        opacity: 0.3;
+        pointer-events: none;
+    }
+</style>
+
+@if (TempData["Success"] != null)
+{
+    <div style="background:rgba(134,239,172,0.1); border:1px solid rgba(134,239,172,0.2); color:#86efac; padding:0.75rem 1rem; border-radius:8px; font-size:0.85rem; margin-bottom:1.5rem;">
+        <i class="bi bi-check-circle me-2"></i> @TempData["Success"]
+    </div>
+}
+
+<div style="margin-bottom:1.5rem">
+    <div style="font-size:0.7rem; color:#555; letter-spacing:2px; text-transform:uppercase; margin-bottom:0.25rem">Users</div>
+    <div style="font-size:1.1rem; font-weight:700; color:white">User Management</div>
+</div>
+
+<form method="get" asp-area="Admin" asp-controller="Users" asp-action="Index">
+    <div class="d-flex flex-wrap gap-2 mb-4">
+        <input type="text" name="search" value="@ViewBag.Search"
+               class="search-input form-control"
+               placeholder="Search username or email..."
+               style="max-width:280px;" />
+        <button type="submit" class="filter-btn">Search</button>
+        <a href="@Url.Action("Index", "Users", new { area = "Admin" })" class="filter-btn">Reset</a>
+    </div>
+</form>
+
+<div style="font-size:0.75rem; color:#555; margin-bottom:0.75rem;">
+    Showing @((ViewBag.CurrentPage - 1) * 20 + 1)-@((ViewBag.CurrentPage - 1) * 20 + Model.Count) of @ViewBag.FilteredCount results
+</div>
+
+@if (!Model.Any())
+{
+    <div style="text-align:center; padding:4rem 2rem; color:#555;">
+        <i class="bi bi-people" style="font-size:2.5rem; display:block; margin-bottom:1rem;"></i>
+        <div>No users found</div>
+    </div>
+}
+else
+{
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in Model)
+            {
+                var roles = (ViewBag.UserRoles as Dictionary<int, IList<string>>)?[user.Id];
+                var isAdmin = roles != null && roles.Contains("Admin");
+                var isBanned = user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.UtcNow;
+
+                <tr>
+                    <td style="color:white; font-weight:600">@user.UserName</td>
+                    <td>@user.Email</td>
+                    <td>
+                        @if (isAdmin)
+                        {
+                            <span class="badge-admin">Admin</span>
+                        }
+                        else
+                        {
+                            <span class="badge-user">User</span>
+                        }
+                    </td>
+                    <td>
+                        @if (isBanned)
+                        {
+                            <span class="badge-banned">Banned</span>
+                        }
+                        else
+                        {
+                            <span style="font-size:0.6rem; color:#555;">Active</span>
+                        }
+                    </td>
+                    <td>
+                        <div class="d-flex gap-2 flex-wrap">
+                            @if (isBanned)
+                            {
+                                <form asp-area="Admin" asp-controller="Users" asp-action="Unban" asp-route-id="@user.Id" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn-action btn-success">Unban</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <form asp-area="Admin" asp-controller="Users" asp-action="Ban" asp-route-id="@user.Id" method="post" onsubmit="return confirm('Ban @user.UserName?')">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn-action btn-danger">Ban</button>
+                                </form>
+                            }
+
+                            @if (isAdmin)
+                            {
+                                <form asp-area="Admin" asp-controller="Users" asp-action="RemoveAdmin" asp-route-id="@user.Id" method="post" onsubmit="return confirm('Remove admin role from @user.UserName?')">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn-action btn-danger">Remove Admin</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <form asp-area="Admin" asp-controller="Users" asp-action="MakeAdmin" asp-route-id="@user.Id" method="post" onsubmit="return confirm('Make @user.UserName admin?')">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn-action">Make Admin</button>
+                                </form>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="d-flex align-items-center gap-2 mt-3">
+        @if (ViewBag.CurrentPage > 1)
+        {
+            <a href="@Url.Action("Index", "Users", new { area = "Admin", page = ViewBag.CurrentPage - 1, search = ViewBag.Search })"
+               class="page-btn">← Prev</a>
+        }
+        else
+        {
+            <span class="page-btn disabled">← Prev</span>
+        }
+
+        <span style="font-size:0.75rem; color:#555;">Page @ViewBag.CurrentPage / @ViewBag.TotalPages</span>
+
+        @if (ViewBag.CurrentPage < ViewBag.TotalPages)
+        {
+            <a href="@Url.Action("Index", "Users", new { area = "Admin", page = ViewBag.CurrentPage + 1, search = ViewBag.Search })"
+               class="page-btn">Next →</a>
+        }
+        else
+        {
+            <span class="page-btn disabled">Next →</span>
+        }
+    </div>
+}

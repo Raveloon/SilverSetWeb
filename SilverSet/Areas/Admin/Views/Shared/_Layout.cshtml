@@ -223,10 +223,10 @@
             </a>
 
         <div class="nav-section-label">Users</div>
-        <a href="#" class="sidebar-link">
-            <i class="bi bi-people"></i> Users
-            <span style="margin-left:auto; font-size:0.6rem; background:rgba(255,255,255,0.1); padding:0.1rem 0.4rem; border-radius:4px; color:#666">Soon</span>
-        </a>
+            <a asp-area="Admin" asp-controller="Users" asp-action="Index"
+               class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Users" ? "active" : "")">
+                <i class="bi bi-people"></i> Users
+            </a>
 
          <div class="nav-section-label">Security</div>
         <a asp-area="Admin" asp-controller="Logs" asp-action="Index"
