@@ -77,7 +77,7 @@ public class LogsController : Controller
             .Take(pageSize)
             .ToListAsync();
 
-        return View(logs);
+        return View("LoginLogs", logs);
     }
     public async Task<IActionResult> PasswordResets(string? search, string? timeFilter, string? specificDate, int page = 1)
     {
