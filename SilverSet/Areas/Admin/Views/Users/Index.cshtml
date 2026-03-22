@@ -10,28 +10,28 @@
         border-collapse: collapse;
     }
 
-    .admin-table th {
-        font-size: 0.65rem;
-        font-weight: 700;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        color: #555;
-        padding: 0.6rem 1rem;
-        border-bottom: 1px solid var(--admin-border);
-        text-align: left;
-    }
+        .admin-table th {
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #555;
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid var(--admin-border);
+            text-align: left;
+        }
 
-    .admin-table td {
-        padding: 0.75rem 1rem;
-        border-bottom: 1px solid rgba(255,255,255,0.04);
-        font-size: 0.8rem;
-        color: #ccc;
-        vertical-align: middle;
-    }
+        .admin-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            font-size: 0.8rem;
+            color: #ccc;
+            vertical-align: middle;
+        }
 
-    .admin-table tr:hover td {
-        background: rgba(255,255,255,0.02);
-    }
+        .admin-table tr:hover td {
+            background: rgba(255,255,255,0.02);
+        }
 
     .badge-admin {
         font-size: 0.6rem;
@@ -82,30 +82,30 @@
         text-decoration: none;
     }
 
-    .btn-action:hover {
-        color: white;
-        border-color: rgba(255,255,255,0.2);
-    }
+        .btn-action:hover {
+            color: white;
+            border-color: rgba(255,255,255,0.2);
+        }
 
     .btn-danger {
         color: #f87171;
         border-color: rgba(248,113,113,0.2);
     }
 
-    .btn-danger:hover {
-        background: rgba(248,113,113,0.08);
-        color: #f87171;
-    }
+        .btn-danger:hover {
+            background: rgba(248,113,113,0.08);
+            color: #f87171;
+        }
 
     .btn-success {
         color: #86efac;
         border-color: rgba(134,239,172,0.2);
     }
 
-    .btn-success:hover {
-        background: rgba(134,239,172,0.08);
-        color: #86efac;
-    }
+        .btn-success:hover {
+            background: rgba(134,239,172,0.08);
+            color: #86efac;
+        }
 
     .filter-btn {
         font-size: 0.75rem;
@@ -119,11 +119,11 @@
         transition: all 0.2s;
     }
 
-    .filter-btn:hover {
-        color: white;
-        border-color: rgba(255,255,255,0.2);
-        background: rgba(255,255,255,0.05);
-    }
+        .filter-btn:hover, .filter-btn.active {
+            color: white;
+            border-color: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.05);
+        }
 
     .search-input {
         background: rgba(255,255,255,0.04) !important;
@@ -134,16 +134,16 @@
         padding: 0.4rem 0.85rem;
     }
 
-    .search-input:focus {
-        border-color: rgba(255,255,255,0.2) !important;
-        box-shadow: none !important;
-        outline: none;
-        background: rgba(255,255,255,0.06) !important;
-    }
+        .search-input:focus {
+            border-color: rgba(255,255,255,0.2) !important;
+            box-shadow: none !important;
+            outline: none;
+            background: rgba(255,255,255,0.06) !important;
+        }
 
-    .search-input::placeholder {
-        color: #444 !important;
-    }
+        .search-input::placeholder {
+            color: #444 !important;
+        }
 
     .page-btn {
         font-size: 0.75rem;
@@ -157,24 +157,76 @@
         transition: all 0.2s;
     }
 
-    .page-btn:hover {
-        color: white;
-        border-color: rgba(255,255,255,0.2);
-        background: rgba(255,255,255,0.05);
+        .page-btn:hover, .page-btn.active {
+            color: white;
+            border-color: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.05);
+        }
+
+        .page-btn.disabled {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+    .stat-card {
+        background: rgba(255,255,255,0.02);
+        border: 1px solid var(--admin-border);
+        border-radius: 10px;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        flex-direction: column;
     }
 
-    .page-btn.disabled {
-        opacity: 0.3;
-        pointer-events: none;
+    .stat-label {
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #555;
+        margin-bottom: 0.4rem;
+    }
+
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: white;
     }
 </style>
 
 @if (TempData["Success"] != null)
 {
-    <div style="background:rgba(134,239,172,0.1); border:1px solid rgba(134,239,172,0.2); color:#86efac; padding:0.75rem 1rem; border-radius:8px; font-size:0.85rem; margin-bottom:1.5rem;">
+    <div style="background: rgba(134,239,172,0.1); border: 1px solid rgba(134,239,172,0.2); color: #86efac; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1.5rem;">
         <i class="bi bi-check-circle me-2"></i> @TempData["Success"]
     </div>
 }
+
+@if (TempData["Error"] != null)
+{
+    <div style="background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.2); color: #f87171; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1.5rem;">
+        <i class="bi bi-exclamation-triangle me-2"></i> @TempData["Error"]
+    </div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-label">Total Users</div>
+            <div class="stat-value">@ViewBag.TotalCount</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-label">Admins</div>
+            <div class="stat-value" style="color:#fbbf24">@ViewBag.AdminCount</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-label">Banned</div>
+            <div class="stat-value" style="color:#f87171">@ViewBag.BannedCount</div>
+        </div>
+    </div>
+</div>
 
 <div style="margin-bottom:1.5rem">
     <div style="font-size:0.7rem; color:#555; letter-spacing:2px; text-transform:uppercase; margin-bottom:0.25rem">Users</div>
@@ -182,6 +234,16 @@
 </div>
 
 <form method="get" asp-area="Admin" asp-controller="Users" asp-action="Index">
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <a href="@Url.Action("Index", "Users", new { area = "Admin", search = ViewBag.Search })"
+           class="filter-btn @(string.IsNullOrEmpty(ViewBag.Filter) ? "active" : "")">All</a>
+        <a href="@Url.Action("Index", "Users", new { area = "Admin", search = ViewBag.Search, filter = "admins" })"
+           class="filter-btn @(ViewBag.Filter == "admins" ? "active" : "")">Admins</a>
+        <a href="@Url.Action("Index", "Users", new { area = "Admin", search = ViewBag.Search, filter = "users" })"
+           class="filter-btn @(ViewBag.Filter == "users" ? "active" : "")">Users</a>
+        <a href="@Url.Action("Index", "Users", new { area = "Admin", search = ViewBag.Search, filter = "banned" })"
+           class="filter-btn @(ViewBag.Filter == "banned" ? "active" : "")">Banned</a>
+    </div>
     <div class="d-flex flex-wrap gap-2 mb-4">
         <input type="text" name="search" value="@ViewBag.Search"
                class="search-input form-control"
@@ -218,13 +280,35 @@ else
         <tbody>
             @foreach (var user in Model)
             {
-                var roles = (ViewBag.UserRoles as Dictionary<int, IList<string>>)?[user.Id];
-                var isAdmin = roles != null && roles.Contains("Admin");
+                var userRoles = ViewBag.UserRoles as Dictionary<int, IList<string>>;
+                var roles = userRoles != null && userRoles.ContainsKey(user.Id) ? userRoles[user.Id] : new List<string>();
+                var isAdmin = roles.Contains("Admin");
                 var isBanned = user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.UtcNow;
+                bool isRoot = user.UserName == ViewBag.RootAdminName;
+                bool isSelf = user.UserName == User.Identity?.Name;
+                bool isCurrentUserRoot = User.Identity?.Name == ViewBag.RootAdminName;
 
                 <tr>
-                    <td style="color:white; font-weight:600">@user.UserName</td>
-                    <td>@user.Email</td>
+                    <td style="color:white; font-weight:600">
+                        @if (isRoot)
+                        {
+                            <span style="color:#fbbf24; letter-spacing: 2px;">[ ROOT OPERATIVE ]</span>
+                        }
+                        else
+                        {
+                            @user.UserName
+                        }
+                    </td>
+                    <td>
+                        @if (isRoot)
+                        {
+                            <span style="font-style:italic; color:#555; letter-spacing: 1px;">[ CLASSIFIED ]</span>
+                        }
+                        else
+                        {
+                            @user.Email
+                        }
+                    </td>
                     <td>
                         @if (isAdmin)
                         {
@@ -247,34 +331,50 @@ else
                     </td>
                     <td>
                         <div class="d-flex gap-2 flex-wrap">
-                            @if (isBanned)
+                            @if (isRoot)
                             {
-                                <form asp-area="Admin" asp-controller="Users" asp-action="Unban" asp-route-id="@user.Id" method="post">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn-action btn-success">Unban</button>
-                                </form>
+                                <span style="font-size:0.65rem; color:#fbbf24; padding:0.25rem 0; font-weight:bold; letter-spacing:1px; text-transform:uppercase;">
+                                    <i class="bi bi-shield-lock-fill"></i> System Core
+                                </span>
+                            }
+                            else if (isSelf)
+                            {
+                                <span style="font-size:0.65rem; color:#555; padding:0.25rem 0; font-style:italic;">Active Session (Protected)</span>
                             }
                             else
                             {
-                                <form asp-area="Admin" asp-controller="Users" asp-action="Ban" asp-route-id="@user.Id" method="post" onsubmit="return confirm('Ban @user.UserName?')">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn-action btn-danger">Ban</button>
-                                </form>
-                            }
+                                if (isBanned)
+                                {
+                                    <form asp-area="Admin" asp-controller="Users" asp-action="Unban" asp-route-id="@user.Id" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn-action btn-success">Unban</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form asp-area="Admin" asp-controller="Users" asp-action="Ban" asp-route-id="@user.Id" method="post" onsubmit="return confirm('Ban @user.UserName?')">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn-action btn-danger">Ban</button>
+                                    </form>
+                                }
 
-                            @if (isAdmin)
-                            {
-                                <form asp-area="Admin" asp-controller="Users" asp-action="RemoveAdmin" asp-route-id="@user.Id" method="post" onsubmit="return confirm('Remove admin role from @user.UserName?')">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn-action btn-danger">Remove Admin</button>
-                                </form>
-                            }
-                            else
-                            {
-                                <form asp-area="Admin" asp-controller="Users" asp-action="MakeAdmin" asp-route-id="@user.Id" method="post" onsubmit="return confirm('Make @user.UserName admin?')">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn-action">Make Admin</button>
-                                </form>
+                                if (isCurrentUserRoot)
+                                {
+                                    if (isAdmin)
+                                    {
+                                        <form asp-area="Admin" asp-controller="Users" asp-action="RemoveAdmin" asp-route-id="@user.Id" method="post" onsubmit="return confirm('Remove admin role from @user.UserName?')">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn-action btn-danger">Remove Admin</button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <form asp-area="Admin" asp-controller="Users" asp-action="MakeAdmin" asp-route-id="@user.Id" method="post" onsubmit="return confirm('Make @user.UserName admin?')">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn-action">Make Admin</button>
+                                        </form>
+                                    }
+                                }
                             }
                         </div>
                     </td>
@@ -286,7 +386,7 @@ else
     <div class="d-flex align-items-center gap-2 mt-3">
         @if (ViewBag.CurrentPage > 1)
         {
-            <a href="@Url.Action("Index", "Users", new { area = "Admin", page = ViewBag.CurrentPage - 1, search = ViewBag.Search })"
+            <a href="@Url.Action("Index", "Users", new { area = "Admin", page = ViewBag.CurrentPage - 1, search = ViewBag.Search, filter = ViewBag.Filter })"
                class="page-btn">← Prev</a>
         }
         else
@@ -298,7 +398,7 @@ else
 
         @if (ViewBag.CurrentPage < ViewBag.TotalPages)
         {
-            <a href="@Url.Action("Index", "Users", new { area = "Admin", page = ViewBag.CurrentPage + 1, search = ViewBag.Search })"
+            <a href="@Url.Action("Index", "Users", new { area = "Admin", page = ViewBag.CurrentPage + 1, search = ViewBag.Search, filter = ViewBag.Filter })"
                class="page-btn">Next →</a>
         }
         else

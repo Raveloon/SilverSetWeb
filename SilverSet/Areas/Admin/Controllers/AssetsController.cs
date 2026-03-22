@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
 using SilverSet.Data;
 using SilverSet.Models.Entities;
+
 namespace SilverSet.Areas.Admin.Controllers;
 
 [Area("Admin")]
@@ -11,7 +12,6 @@ namespace SilverSet.Areas.Admin.Controllers;
 public class AssetsController : Controller
 {
     private readonly SilverSetContext _context;
-
     private readonly IWebHostEnvironment _env;
 
     public AssetsController(SilverSetContext context, IWebHostEnvironment env)
@@ -28,9 +28,10 @@ public class AssetsController : Controller
         }
         base.OnActionExecuting(context);
     }
+
     public async Task<IActionResult> Index()
     {
-        var games = await _context.FeaturedGames
+        var games = await _context.Assets
             .OrderBy(g => g.DisplayOrder)
             .ToListAsync();
         return View(games);
@@ -43,11 +44,10 @@ public class AssetsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(FeaturedGame model, IFormFile? imageFile)
+    public async Task<IActionResult> Create(Asset model, IFormFile? imageFile)
     {
         if (imageFile != null && imageFile.Length > 0)
         {
-            // Güvenlik: dosya türü kontrolü
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
             var ext = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
             if (!allowedExtensions.Contains(ext))
@@ -55,7 +55,7 @@ public class AssetsController : Controller
                 ModelState.AddModelError("ImagePath", "Sadece jpg, jpeg, png, webp dosyaları yüklenebilir.");
                 return View(model);
             }
-            // Güvenlik : dosya türü kontrolü 2
+
             var allowedMimeTypes = new[] { "image/jpeg", "image/png", "image/webp" };
             if (!allowedMimeTypes.Contains(imageFile.ContentType.ToLowerInvariant()))
             {
@@ -63,7 +63,6 @@ public class AssetsController : Controller
                 return View(model);
             }
 
-            // Max 5MB
             if (imageFile.Length > 5 * 1024 * 1024)
             {
                 ModelState.AddModelError("ImagePath", "Dosya boyutu 5MB'dan küçük olmalı.");
@@ -85,31 +84,34 @@ public class AssetsController : Controller
 
         if (ModelState.IsValid)
         {
-            _context.FeaturedGames.Add(model);
+            _context.Assets.Add(model);
             await _context.SaveChangesAsync();
             TempData["Success"] = "Proje başarıyla eklendi.";
             return RedirectToAction(nameof(Index));
         }
         return View(model);
     }
+
     public async Task<IActionResult> Edit(int id)
     {
-        var game = await _context.FeaturedGames.FindAsync(id);
+        var game = await _context.Assets.FindAsync(id);
         if (game == null) return NotFound();
         return View(game);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, FeaturedGame model, IFormFile? imageFile)
+    public async Task<IActionResult> Edit(int id, Asset model, IFormFile? imageFile)
     {
         if (id != model.Id) return NotFound();
+
         if (imageFile == null || imageFile.Length == 0)
         {
-            var existing = await _context.FeaturedGames.AsNoTracking()
+            var existing = await _context.Assets.AsNoTracking()
                 .FirstOrDefaultAsync(g => g.Id == id);
             model.ImagePath = existing?.ImagePath;
         }
+
         if (imageFile != null && imageFile.Length > 0)
         {
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
@@ -119,6 +121,7 @@ public class AssetsController : Controller
                 ModelState.AddModelError("ImagePath", "Sadece jpg, jpeg, png, webp dosyaları yüklenebilir.");
                 return View(model);
             }
+
             var allowedMimeTypes = new[] { "image/jpeg", "image/png", "image/webp" };
             if (!allowedMimeTypes.Contains(imageFile.ContentType.ToLowerInvariant()))
             {
@@ -162,14 +165,31 @@ public class AssetsController : Controller
         return View(model);
     }
 
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> ToggleVisibility(int id)
     {
-        var game = await _context.FeaturedGames.FindAsync(id);
+        var game = await _context.Assets.FindAsync(id);
         if (game != null)
         {
-            _context.FeaturedGames.Remove(game);
+            game.IsVisible = !game.IsVisible;
+            await _context.SaveChangesAsync();
+            TempData["Success"] = "Proje görünürlüğü değiştirildi.";
+        }
+        return RedirectToAction(nameof(Index));
+    }
+
+    public async Task<IActionResult> Delete(int id)
+    {
+        var game = await _context.Assets.FindAsync(id);
+        if (game != null)
+        {
+            if (!string.IsNullOrEmpty(game.ImagePath))
+            {
+                var oldPath = Path.Combine(_env.WebRootPath, game.ImagePath.TrimStart('/'));
+                if (System.IO.File.Exists(oldPath))
+                    System.IO.File.Delete(oldPath);
+            }
+
+            _context.Assets.Remove(game);
             await _context.SaveChangesAsync();
         }
         TempData["Success"] = "Proje başarıyla silindi.";

@@ -5,112 +5,689 @@
 
 <style>
     .stat-card {
-        background: rgba(255,255,255,0.03);
+        background: rgba(255,255,255,0.02);
         border: 1px solid var(--admin-border);
         border-radius: 12px;
-        padding: 1.5rem;
-        transition: all 0.2s ease;
+        padding: 1.25rem 1.5rem;
+        padding-bottom: 2rem;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+        transition: border-color 0.2s;
+        display: flex;
+        flex-direction: column;
     }
 
         .stat-card:hover {
-            background: rgba(255,255,255,0.05);
-            border-color: rgba(255,255,255,0.12);
+            border-color: rgba(255,255,255,0.1);
         }
+
+    .stat-card-accent {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 3px;
+        height: 100%;
+        border-radius: 12px 0 0 12px;
+    }
+
+    .stat-content-wrapper {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        pointer-events: none;
+    }
 
     .stat-label {
-        font-size: 0.7rem;
-        font-weight: 700;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        color: #666;
-        margin-bottom: 0.5rem;
-    }
-
-    .stat-value {
-        font-size: 2.2rem;
-        font-weight: 900;
-        color: white;
-        line-height: 1;
-    }
-
-    .stat-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 8px;
-        background: rgba(255,255,255,0.06);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1rem;
-        color: #999;
-        margin-bottom: 1rem;
-    }
-
-    .quick-action {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.85rem 1rem;
-        background: rgba(255,255,255,0.03);
-        border: 1px solid var(--admin-border);
-        border-radius: 10px;
-        color: #9ca3af;
-        text-decoration: none;
-        font-size: 0.875rem;
-        font-weight: 500;
-        transition: all 0.2s ease;
-    }
-
-        .quick-action:hover {
-            background: rgba(255,255,255,0.06);
-            color: white;
-            border-color: rgba(255,255,255,0.12);
-        }
-
-    .section-title {
-        font-size: 0.75rem;
+        font-size: 0.62rem;
         font-weight: 700;
         letter-spacing: 2px;
         text-transform: uppercase;
         color: #555;
+        margin-bottom: 0.6rem;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 800;
+        color: white;
+        line-height: 1;
+        margin-bottom: 0.3rem;
+    }
+
+    .stat-sub {
+        font-size: 0.62rem;
+        color: #444;
+        letter-spacing: 0.5px;
+        margin-top: auto;
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
         margin-bottom: 1rem;
+        margin-top: 2rem;
+    }
+
+    .section-header-line {
+        flex: 1;
+        height: 1px;
+        background: var(--admin-border);
+    }
+
+    .section-title {
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 2.5px;
+        text-transform: uppercase;
+        color: #444;
+        white-space: nowrap;
+    }
+
+    .chart-card {
+        background: rgba(255,255,255,0.02);
+        border: 1px solid var(--admin-border);
+        border-radius: 12px;
+        padding: 1.5rem;
+    }
+
+    .chart-title {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: #555;
+        margin-bottom: 0;
+    }
+
+    .chart-filter-dropdown {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--admin-border);
+        color: #888;
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+        .chart-filter-dropdown:hover {
+            background: rgba(255,255,255,0.08);
+            color: white;
+            border-color: rgba(255,255,255,0.2);
+        }
+
+    .dropdown-menu-dark {
+        background: #111 !important;
+        border: 1px solid var(--admin-border) !important;
+        min-width: 100px !important;
+    }
+
+    .dropdown-item {
+        font-size: 0.7rem !important;
+        color: #888 !important;
+        padding: 0.4rem 1rem !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+        .dropdown-item:hover {
+            background: rgba(255,255,255,0.05) !important;
+            color: white !important;
+        }
+
+        .dropdown-item.active {
+            background: rgba(255,255,255,0.1) !important;
+            color: white !important;
+        }
+
+    .db-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        padding: 0.35rem 0.85rem;
+        border-radius: 20px;
+    }
+
+    .db-healthy {
+        background: rgba(134,239,172,0.1);
+        color: #86efac;
+        border: 1px solid rgba(134,239,172,0.2);
+    }
+
+    .db-error {
+        background: rgba(248,113,113,0.1);
+        color: #f87171;
+        border: 1px solid rgba(248,113,113,0.2);
     }
 </style>
 
-<div class="row g-3 mb-4">
-    <div class="col-12 col-md-4">
+<div class="section-header" style="margin-top:0">
+    <span class="section-title">Users</span>
+    <div class="section-header-line"></div>
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
         <div class="stat-card">
-            <div class="stat-icon"><i class="bi bi-people"></i></div>
-            <div class="stat-label">Total Users</div>
-            <div class="stat-value">@ViewBag.UserCount</div>
+            <div class="stat-card-accent" style="background:#c8c8c8"></div>
+            <div class="stat-content-wrapper">
+                <div class="stat-label">Total Users</div>
+                <div class="stat-value">@ViewBag.TotalUsers</div>
+            </div>
+            <div style="position:absolute; bottom:0; left:0; right:0; height:45px; opacity:0.3; z-index:1;">
+                <canvas id="sparkTotalUsers"></canvas>
+            </div>
         </div>
     </div>
-    <div class="col-12 col-md-4">
+    <div class="col-6 col-md-3">
         <div class="stat-card">
-            <div class="stat-icon"><i class="bi bi-collection"></i></div>
-            <div class="stat-label">Total Projects</div>
-            <div class="stat-value">@ViewBag.ProjectCount</div>
+            <div class="stat-card-accent" style="background:#86efac"></div>
+            <div class="stat-content-wrapper">
+                <div class="stat-label">New This Week</div>
+                <div class="stat-value" style="color:#86efac">@ViewBag.NewThisWeek</div>
+            </div>
+            <div style="position:absolute; bottom:0; left:0; right:0; height:45px; opacity:0.3; z-index:1;">
+                <canvas id="sparkNewUsers"></canvas>
+            </div>
         </div>
     </div>
-    <div class="col-12 col-md-4">
+    <div class="col-6 col-md-3">
         <div class="stat-card">
-            <div class="stat-icon"><i class="bi bi-eye"></i></div>
-            <div class="stat-label">Visible Projects</div>
-            <div class="stat-value">@ViewBag.VisibleCount</div>
+            <div class="stat-card-accent" style="background:#c8c8c8"></div>
+            <div class="stat-content-wrapper">
+                <div class="stat-label">New This Month</div>
+                <div class="stat-value">@ViewBag.NewThisMonth</div>
+            </div>
+            <div style="position:absolute; bottom:0; left:0; right:0; height:45px; opacity:0.3; z-index:1;">
+                <canvas id="sparkMonthlyUsers"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-card-accent" style="background:#60a5fa"></div>
+            <div class="stat-content-wrapper">
+                <div class="stat-label">Active Today</div>
+                <div class="stat-value" style="color:#60a5fa">@ViewBag.ActiveToday</div>
+                <div class="stat-sub">Unique logins</div>
+            </div>
+            <div style="position:absolute; bottom:0; left:0; right:0; height:45px; opacity:0.3; z-index:1;">
+                <canvas id="sparkActiveLogins"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row g-3">
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-card-accent" style="background:#fbbf24"></div>
+            <div class="stat-content-wrapper">
+                <div class="stat-label">Admins</div>
+                <div class="stat-value" style="color:#fbbf24">@ViewBag.AdminCount</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-card-accent" style="background:#f87171"></div>
+            <div class="stat-content-wrapper">
+                <div class="stat-label">Banned</div>
+                <div class="stat-value" style="color:#f87171">@ViewBag.BannedCount</div>
+            </div>
         </div>
     </div>
 </div>
 
+<div class="section-header">
+    <span class="section-title">Security</span>
+    <div class="section-header-line"></div>
+</div>
 <div class="row g-3">
-    <div class="col-12 col-md-6">
-        <div class="section-title">Quick Actions</div>
-        <div class="d-flex flex-column gap-2">
-            <a asp-area="Admin" asp-controller="Assets" asp-action="Create" class="quick-action">
-                <i class="bi bi-plus-circle"></i> Add New Project
-            </a>
-            <a asp-area="Admin" asp-controller="Assets" asp-action="Index" class="quick-action">
-                <i class="bi bi-collection"></i> Manage Projects
-            </a>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-card-accent" style="background:#f87171"></div>
+            <div class="stat-content-wrapper">
+                <div class="stat-label">Failed Today</div>
+                <div class="stat-value" style="color:#f87171">@ViewBag.FailedLoginsToday</div>
+                <div class="stat-sub">login attempts</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-card-accent" style="background:#f87171"></div>
+            <div class="stat-content-wrapper">
+                <div class="stat-label">Failed (7 Days)</div>
+                <div class="stat-value" style="color:#f87171">@ViewBag.FailedLoginsWeek</div>
+                <div class="stat-sub">login attempts</div>
+            </div>
+            <div style="position:absolute; bottom:0; left:0; right:0; height:45px; opacity:0.25; z-index:1;">
+                <canvas id="sparkFailedLogins"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-card-accent" style="background:#c8c8c8"></div>
+            <div class="stat-content-wrapper">
+                <div class="stat-label">Login Logs</div>
+                <div class="stat-value">@ViewBag.TotalLoginLogs</div>
+                <div class="stat-sub">total records</div>
+            </div>
+            <div style="position:absolute; bottom:0; left:0; right:0; height:45px; opacity:0.3; z-index:1;">
+                <canvas id="sparkTotalLogins"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-card-accent" style="background:#fbbf24"></div>
+            <div class="stat-content-wrapper">
+                <div class="stat-label">Password Resets</div>
+                <div class="stat-value" style="color:#fbbf24">@ViewBag.TotalPasswordResets</div>
+                <div class="stat-sub">total records</div>
+            </div>
+            <div style="position:absolute; bottom:0; left:0; right:0; height:45px; opacity:0.3; z-index:1;">
+                <canvas id="sparkPasswordResets"></canvas>
+            </div>
         </div>
     </div>
 </div>
+
+<div class="section-header">
+    <span class="section-title">Content</span>
+    <div class="section-header-line"></div>
+</div>
+<div class="row g-3">
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-card-accent" style="background:#c8c8c8"></div>
+            <div class="stat-content-wrapper">
+                <div class="stat-label">Total Projects</div>
+                <div class="stat-value">@ViewBag.TotalProjects</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-card-accent" style="background:#86efac"></div>
+            <div class="stat-content-wrapper">
+                <div class="stat-label">Visible</div>
+                <div class="stat-value" style="color:#86efac">@ViewBag.VisibleProjects</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-card-accent" style="background:#555"></div>
+            <div class="stat-content-wrapper">
+                <div class="stat-label">Hidden</div>
+                <div class="stat-value" style="color:#555">@((int)(ViewBag.TotalProjects ?? 0) - (int)(ViewBag.VisibleProjects ?? 0))</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="section-header">
+    <span class="section-title">System</span>
+    <div class="section-header-line"></div>
+</div>
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-content-wrapper">
+                <div class="stat-label">Database</div>
+                <div class="mt-2">
+                    @if (ViewBag.DbStatus == "Healthy")
+                    {
+                        <span class="db-badge db-healthy">
+                            <i class="bi bi-check-circle-fill"></i> Healthy
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="db-badge db-error">
+                            <i class="bi bi-x-circle-fill"></i> Error
+                        </span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="section-header">
+    <span class="section-title">Analytics</span>
+    <div class="section-header-line"></div>
+</div>
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="chart-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="chart-title" id="title-registrations">
+                    @{
+                        string regSuffix = "";
+                        if (ViewBag.SelectedDays == 0) { regSuffix = " — All Time"; }
+                        else if (ViewBag.SelectedDays > ViewBag.ActualDisplayedDays) { regSuffix = " — " + ViewBag.ActualDisplayedDays + " Days"; }
+                    }
+                    Daily Registrations@(regSuffix)
+                </div>
+                <div class="dropdown">
+                    <button id="btnRegRange" class="chart-filter-dropdown dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-calendar3 me-1"></i> Range
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-dark">
+                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="refreshSingleChart('reg', 7, '7 Days')">7 Days</a></li>
+                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="refreshSingleChart('reg', 14, '14 Days')">14 Days</a></li>
+                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="refreshSingleChart('reg', 30, '1 Month')">1 Month</a></li>
+                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="refreshSingleChart('reg', 365, '1 Year')">1 Year</a></li>
+                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="refreshSingleChart('reg', 0, 'All Time')">All Time</a></li>
+                    </ul>
+                </div>
+            </div>
+            <canvas id="registrationsChart" height="180"></canvas>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="chart-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="chart-title" id="title-logins">
+                    @{
+                        string logSuffix = "";
+                        if (ViewBag.SelectedDays == 0) { logSuffix = " — All Time"; }
+                        else if (ViewBag.SelectedDays > ViewBag.ActualDisplayedDays) { logSuffix = " — " + ViewBag.ActualDisplayedDays + " Days"; }
+                    }
+                    Login Activity@(logSuffix)
+                </div>
+                <div class="dropdown">
+                    <button id="btnLogRange" class="chart-filter-dropdown dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-calendar3 me-1"></i> Range
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-dark">
+                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="refreshSingleChart('log', 7, '7 Days')">7 Days</a></li>
+                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="refreshSingleChart('log', 14, '14 Days')">14 Days</a></li>
+                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="refreshSingleChart('log', 30, '1 Month')">1 Month</a></li>
+                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="refreshSingleChart('log', 365, '1 Year')">1 Year</a></li>
+                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="refreshSingleChart('log', 0, 'All Time')">All Time</a></li>
+                    </ul>
+                </div>
+            </div>
+            <canvas id="loginsChart" height="180"></canvas>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script>
+        const allTimeRegistrationsData = @Html.Raw(ViewBag.AllTimeRegistrationsJson ?? "[]");
+        const registrationsData = @Html.Raw(ViewBag.DailyRegistrationsJson ?? "[]");
+        const monthlyRegData = @Html.Raw(ViewBag.MonthlyRegistrationsJson ?? "[]");
+        const loginsData = @Html.Raw(ViewBag.DailyLoginsJson ?? "[]");
+        const resetsData = @Html.Raw(ViewBag.DailyResetsJson ?? "[]");
+
+        let regChart, logChart;
+
+        const baseOptions = {
+            animation: {
+                duration: 800,
+                easing: 'easeInOutQuart'
+            },
+            plugins: {
+                legend: {
+                    labels: { color: '#555', font: { size: 11 }, boxWidth: 12 }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: '#444', font: { size: 10 } },
+                    grid: { color: 'rgba(255,255,255,0.03)' }
+                },
+                y: {
+                    ticks: { color: '#444', font: { size: 10 } },
+                    grid: { color: 'rgba(255,255,255,0.03)' },
+                    beginAtZero: true,
+                    precision: 0
+                }
+            }
+        };
+
+        const sparklineOptions = {
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    enabled: true,
+                    backgroundColor: 'rgba(10, 10, 10, 0.9)',
+                    titleColor: '#888',
+                    bodyColor: '#fff',
+                    titleFont: { size: 10, weight: 'bold' },
+                    bodyFont: { size: 12, weight: 'bold' },
+                    displayColors: false,
+                    padding: 8,
+                    cornerRadius: 6,
+                    borderColor: 'rgba(255,255,255,0.1)',
+                    borderWidth: 1,
+                    caretSize: 4
+                }
+            },
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                x: { display: false },
+                y: { display: false, min: 0, suggestedMax: 1 }
+            },
+            elements: {
+                point: { radius: 0, hitRadius: 10, hoverRadius: 4, hoverBorderWidth: 2 },
+                line: { tension: 0.5, borderWidth: 2 }
+            },
+            maintainAspectRatio: false,
+            layout: { padding: { top: 10, bottom: 0, left: 0, right: 0 } }
+        };
+
+        function initCharts() {
+            regChart = new Chart(document.getElementById('registrationsChart'), {
+                type: 'bar',
+                data: {
+                    labels: registrationsData.map(d => d.Date),
+                    datasets: [{
+                        label: 'New Users',
+                        data: registrationsData.map(d => d.Count),
+                        backgroundColor: 'rgba(134,239,172,0.15)',
+                        borderColor: '#86efac',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: baseOptions
+            });
+
+            logChart = new Chart(document.getElementById('loginsChart'), {
+                type: 'line',
+                data: {
+                    labels: loginsData.map(d => d.Date),
+                    datasets: [
+                        {
+                            label: 'Successful',
+                            data: loginsData.map(d => d.Success),
+                            borderColor: '#86efac',
+                            backgroundColor: 'rgba(134,239,172,0.08)',
+                            tension: 0.5,
+                            fill: true,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#86efac'
+                        },
+                        {
+                            label: 'Failed',
+                            data: loginsData.map(d => d.Failed),
+                            borderColor: '#f87171',
+                            backgroundColor: 'rgba(248,113,113,0.08)',
+                            tension: 0.5,
+                            fill: true,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#f87171'
+                        }
+                    ]
+                },
+                options: baseOptions
+            });
+        }
+
+        function refreshSingleChart(chartType, days, btnText) {
+            $.get('/Admin/Dashboard/GetChartData', { days: days }, function (res) {
+                let titleSuffix = "";
+                if (days === 0) {
+                    titleSuffix = " — All Time";
+                } else if (days > res.displayedDays) {
+                    titleSuffix = " — " + res.displayedDays + " Days";
+                }
+
+                if (chartType === 'reg') {
+                    regChart.data.labels = res.registrations.map(d => d.date || d.Date);
+                    regChart.data.datasets[0].data = res.registrations.map(d => d.count !== undefined ? d.count : d.Count);
+                    regChart.update();
+                    document.getElementById('title-registrations').innerText = "Daily Registrations" + titleSuffix;
+                    document.getElementById('btnRegRange').innerHTML = '<i class="bi bi-calendar3 me-1"></i> ' + btnText;
+                } else if (chartType === 'log') {
+                    logChart.data.labels = res.logins.map(d => d.date || d.Date);
+                    logChart.data.datasets[0].data = res.logins.map(d => d.success !== undefined ? d.success : d.Success);
+                    logChart.data.datasets[1].data = res.logins.map(d => d.failed !== undefined ? d.failed : d.Failed);
+                    logChart.update();
+                    document.getElementById('title-logins').innerText = "Login Activity" + titleSuffix;
+                    document.getElementById('btnLogRange').innerHTML = '<i class="bi bi-calendar3 me-1"></i> ' + btnText;
+                }
+            });
+        }
+
+        function updateLiveClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+
+            const clockElement = document.getElementById('live-top-clock');
+            if (clockElement) {
+                clockElement.innerText = hours + ':' + minutes;
+            }
+        }
+
+        $(document).ready(function() {
+            initCharts();
+
+            setInterval(updateLiveClock, 1000);
+            updateLiveClock();
+
+            new Chart(document.getElementById('sparkTotalUsers'), {
+                type: 'line',
+                data: {
+                    labels: allTimeRegistrationsData.map(d => d.Date),
+                    datasets: [{
+                        label: 'Total Users',
+                        data: allTimeRegistrationsData.map(d => d.CumulativeTotal),
+                        borderColor: '#c8c8c8',
+                        backgroundColor: 'rgba(200,200,200,0.1)',
+                        fill: true
+                    }]
+                },
+                options: sparklineOptions
+            });
+
+            new Chart(document.getElementById('sparkNewUsers'), {
+                type: 'line',
+                data: {
+                    labels: registrationsData.map(d => d.Date),
+                    datasets: [{
+                        label: 'New Users',
+                        data: registrationsData.map(d => d.Count),
+                        borderColor: '#86efac',
+                        backgroundColor: 'rgba(134,239,172,0.1)',
+                        fill: true
+                    }]
+                },
+                options: sparklineOptions
+            });
+
+            new Chart(document.getElementById('sparkMonthlyUsers'), {
+                type: 'line',
+                data: {
+                    labels: monthlyRegData.map(d => d.Date),
+                    datasets: [{
+                        label: 'New Users',
+                        data: monthlyRegData.map(d => d.Count),
+                        borderColor: '#c8c8c8',
+                        backgroundColor: 'rgba(200,200,200,0.1)',
+                        fill: true
+                    }]
+                },
+                options: sparklineOptions
+            });
+
+            new Chart(document.getElementById('sparkActiveLogins'), {
+                type: 'line',
+                data: {
+                    labels: loginsData.map(d => d.Date),
+                    datasets: [{
+                        label: 'Active',
+                        data: loginsData.map(d => d.Success),
+                        borderColor: '#60a5fa',
+                        backgroundColor: 'rgba(96,165,250,0.1)',
+                        fill: true
+                    }]
+                },
+                options: sparklineOptions
+            });
+
+            new Chart(document.getElementById('sparkFailedLogins'), {
+                type: 'line',
+                data: {
+                    labels: loginsData.map(d => d.Date),
+                    datasets: [{
+                        label: 'Failed',
+                        data: loginsData.map(d => d.Failed),
+                        borderColor: '#f87171',
+                        backgroundColor: 'rgba(248,113,113,0.1)',
+                        fill: true
+                    }]
+                },
+                options: sparklineOptions
+            });
+
+            new Chart(document.getElementById('sparkTotalLogins'), {
+                type: 'line',
+                data: {
+                    labels: loginsData.map(d => d.Date),
+                    datasets: [{
+                        label: 'Total Logs',
+                        data: loginsData.map(d => d.Total),
+                        borderColor: '#c8c8c8',
+                        backgroundColor: 'rgba(200,200,200,0.1)',
+                        fill: true
+                    }]
+                },
+                options: sparklineOptions
+            });
+
+            new Chart(document.getElementById('sparkPasswordResets'), {
+                type: 'line',
+                data: {
+                    labels: resetsData.map(d => d.Date),
+                    datasets: [{
+                        label: 'Resets',
+                        data: resetsData.map(d => d.Count),
+                        borderColor: '#fbbf24',
+                        backgroundColor: 'rgba(251,191,36,0.1)',
+                        fill: true
+                    }]
+                },
+                options: sparklineOptions
+            });
+        });
+    </script>
+}

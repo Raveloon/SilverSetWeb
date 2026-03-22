@@ -12,6 +12,6 @@ namespace SilverSet.Data
         
         public DbSet<UserLoginLog> UserLoginLogs { get; set; }
 
-        public DbSet<FeaturedGame> FeaturedGames { get; set; }
+        public DbSet<Asset> Assets { get; set; }
     }
 }

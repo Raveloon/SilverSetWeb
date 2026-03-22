@@ -6,7 +6,7 @@
     <title>@ViewData["Title"] - SilverSet Studios</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-
+    
     <style>
         body {
             background-color: var(--color-bg);
@@ -345,7 +345,7 @@
                     <ul class="navbar-nav mx-auto d-flex flex-lg-row flex-column gap-1">
                         <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Index">Home</a></li>
                         <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Games">Games</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="FabProject">FAB Project</a></li>
+                        <li class="nav-item"><a asp-controller="Assets" asp-action="Index" class="nav-link">FAB Projects</a></li>
                         <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Community">Community</a></li>
                         <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="About">About</a></li>
                         <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Contact">Contact</a></li>
@@ -433,7 +433,7 @@
                     <p class="footer-heading">Navigate</p>
                     <a asp-controller="Home" asp-action="Index" class="footer-link">Home</a>
                     <a asp-controller="Home" asp-action="Games" class="footer-link">Games</a>
-                    <a asp-controller="Home" asp-action="FabProject" class="footer-link">FAB Project</a>
+                    <a asp-controller="Assets" asp-action="Index" class="nav-link">FAB Projects</a>
                     <a asp-controller="Home" asp-action="Community" class="footer-link">Community</a>
                     <a asp-controller="Home" asp-action="About" class="footer-link">About</a>
                     <a asp-controller="Home" asp-action="Contact" class="footer-link">Contact</a>

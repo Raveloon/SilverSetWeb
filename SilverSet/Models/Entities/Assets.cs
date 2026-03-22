@@ -2,7 +2,7 @@
 
 namespace SilverSet.Models.Entities
 {
-    public class FeaturedGame
+    public class Asset
     {
         public int Id { get; set; }
 

@@ -26,7 +26,7 @@ public class HomeController : Controller
     {
         ViewBag.UserCount = _userManager.Users.Count();
          
-        var games = await _context.FeaturedGames.Where(g => g.IsVisible).OrderBy(g => g.DisplayOrder).ToListAsync();    
+        var games = await _context.Assets.Where(g => g.IsVisible).OrderBy(g => g.DisplayOrder).ToListAsync();    
 
         return View(games);
     }

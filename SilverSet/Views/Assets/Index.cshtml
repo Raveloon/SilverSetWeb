@@ -1,0 +1,205 @@
+﻿@model IEnumerable<SilverSet.Models.Entities.Asset>
+@{
+    ViewData["Title"] = "Projects";
+}
+
+<style>
+    .showcase-header {
+        text-align: center;
+        padding: 4rem 0 2rem;
+    }
+
+    .showcase-title {
+        font-size: 3rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        background: linear-gradient(90deg, #ffffff, #666666);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .showcase-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 2rem;
+        padding: 2rem 0;
+    }
+
+    .project-card {
+        background: #111111;
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 16px;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        display: flex;
+        flex-direction: column;
+    }
+
+        .project-card:hover {
+            transform: translateY(-10px);
+            border-color: rgba(255,255,255,0.2);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+        }
+
+    .image-wrapper {
+        position: relative;
+        height: 220px;
+        overflow: hidden;
+        background: #050505;
+    }
+
+    .project-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+
+    .project-card:hover .project-image {
+        transform: scale(1.05);
+    }
+
+    .genre-tag {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: rgba(0,0,0,0.6);
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(255,255,255,0.1);
+        padding: 0.4rem 1rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: white;
+    }
+
+    .card-body {
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+    }
+
+    .card-title {
+        font-size: 1.4rem;
+        font-weight: 800;
+        margin-bottom: 0.8rem;
+        letter-spacing: 0.5px;
+        color: white;
+    }
+
+    .card-text {
+        color: #999999;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+        flex: 1;
+    }
+
+    .card-footer {
+        margin-top: auto;
+        border-top: 1px solid rgba(255,255,255,0.05);
+        padding-top: 1.2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .status-text {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #888888;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .play-btn {
+        background: white;
+        color: black;
+        padding: 0.5rem 1.2rem;
+        border-radius: 8px;
+        font-weight: 800;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        text-decoration: none;
+        transition: background 0.2s;
+    }
+
+        .play-btn:hover {
+            background: #e5e5e5;
+            color: black;
+        }
+
+    .no-image {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        color: #222222;
+    }
+</style>
+
+<div class="container">
+    <div class="showcase-header">
+        <h1 class="showcase-title">Fab Projects</h1>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div style="text-align:center; padding: 4rem 0;">
+            <h4 style="color:#666666;">There are currently no projects on display.</h4>
+        </div>
+    }
+    else
+    {
+        <div class="showcase-grid">
+            @foreach (var item in Model)
+            {
+                <div class="project-card">
+                    <div class="image-wrapper">
+                        @if (!string.IsNullOrEmpty(item.Genre))
+                        {
+                            <span class="genre-tag">@item.Genre</span>
+                        }
+
+                        @if (!string.IsNullOrEmpty(item.ImagePath))
+                        {
+                            <img src="@item.ImagePath" alt="@item.Title" class="project-image" />
+                        }
+                        else
+                        {
+                            <div class="no-image">
+                                <i class="bi bi-image"></i>
+                            </div>
+                        }
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">@item.Title</h3>
+
+                        @if (!string.IsNullOrEmpty(item.Description))
+                        {
+                            <p class="card-text">@item.Description</p>
+                        }
+
+                        <div class="card-footer">
+                            <span class="status-text">
+                                @(string.IsNullOrEmpty(item.Status) ? "RELEASED" : item.Status)
+                            </span>
+
+                            @if (!string.IsNullOrEmpty(item.ExternalLink))
+                            {
+                                <a href="@item.ExternalLink" target="_blank" class="play-btn">Visit</a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

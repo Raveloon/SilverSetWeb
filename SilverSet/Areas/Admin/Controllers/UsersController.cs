@@ -14,11 +14,13 @@ public class UsersController : Controller
 {
     private readonly UserManager<AppUser> _userManager;
     private readonly SilverSetContext _context;
+    private readonly IConfiguration _configuration;
 
-    public UsersController(UserManager<AppUser> userManager, SilverSetContext context)
+    public UsersController(UserManager<AppUser> userManager, SilverSetContext context, IConfiguration configuration)
     {
         _userManager = userManager;
         _context = context;
+        _configuration = configuration;
     }
 
     public override void OnActionExecuting(ActionExecutingContext context)
@@ -30,16 +32,33 @@ public class UsersController : Controller
         base.OnActionExecuting(context);
     }
 
-    public async Task<IActionResult> Index(string? search, int page = 1)
+    public async Task<IActionResult> Index(string? search, string? filter, int page = 1)
     {
         int pageSize = 20;
 
         var query = _userManager.Users.AsQueryable();
-
         if (!string.IsNullOrEmpty(search))
             query = query.Where(u =>
                 u.UserName.Contains(search) ||
                 (u.Email != null && u.Email.Contains(search)));
+        if (filter == "admins")
+        {
+            var adminUsers = await _userManager.GetUsersInRoleAsync("Admin");
+            var adminIds = adminUsers.Select(u => u.Id).ToList();
+            query = query.Where(u => adminIds.Contains(u.Id));
+        }
+        else if (filter == "banned")
+        {
+            query = query.Where(u => u.LockoutEnd != null && u.LockoutEnd > DateTimeOffset.UtcNow);
+        }
+        else if (filter == "users")
+        {
+            var adminUsers = await _userManager.GetUsersInRoleAsync("Admin");
+            var adminIds = adminUsers.Select(u => u.Id).ToList();
+            query = query.Where(u => !adminIds.Contains(u.Id));
+        }
+
+        ViewBag.Filter = filter;
 
         ViewBag.TotalCount = await _userManager.Users.CountAsync();
         ViewBag.FilteredCount = await query.CountAsync();
@@ -60,7 +79,9 @@ public class UsersController : Controller
         }
 
         ViewBag.UserRoles = userRoles;
-
+        ViewBag.AdminCount = (await _userManager.GetUsersInRoleAsync("Admin")).Count;
+        ViewBag.BannedCount = await _userManager.Users.CountAsync(u => u.LockoutEnd != null && u.LockoutEnd > DateTimeOffset.UtcNow);
+        ViewBag.RootAdminName = _configuration["AdminSetup:AdminName"];
         return View(users);
     }
 
@@ -70,6 +91,13 @@ public class UsersController : Controller
     {
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user == null) return NotFound();
+
+        // GÜVENLİK KORUMASI: Admin kendini veya Kök(Root) Admin'i banlayamaz
+        if (user.UserName == User.Identity?.Name || user.UserName == "Admin")
+        {
+            TempData["Error"] = "Kendinizi veya Kök(Root) Admin'i banlayamazsınız!";
+            return RedirectToAction(nameof(Index));
+        }
 
         await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
         await _userManager.SetLockoutEnabledAsync(user, true);
@@ -95,6 +123,14 @@ public class UsersController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> MakeAdmin(int id)
     {
+        // KORUMA: Sadece Root Admin yetki verebilir
+        string rootAdmin = _configuration["AdminSetup:AdminName"] ?? "Admin";
+        if (User.Identity?.Name != rootAdmin)
+        {
+            TempData["Error"] = "Yetki Hatası: Sadece Kök (Root) Admin başka birini admin yapabilir!";
+            return RedirectToAction(nameof(Index));
+        }
+
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user == null) return NotFound();
 
@@ -109,8 +145,23 @@ public class UsersController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RemoveAdmin(int id)
     {
+        // KORUMA: Sadece Root Admin yetki alabilir
+        string rootAdmin = _configuration["AdminSetup:AdminName"] ;
+        if (User.Identity?.Name != rootAdmin)
+        {
+            TempData["Error"] = "Yetki Hatası: Sadece Kök (Root) Admin yetki alabilir!";
+            return RedirectToAction(nameof(Index));
+        }
+
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user == null) return NotFound();
+
+        // GÜVENLİK KORUMASI: Admin kendi yetkisini veya Kök(Root) Admin'in yetkisini alamaz
+        if (user.UserName == User.Identity?.Name || user.UserName == rootAdmin)
+        {
+            TempData["Error"] = "Kritik Hata: Kendi yetkinizi veya Kök(Root) Admin'in yetkisini kaldıramazsınız!";
+            return RedirectToAction(nameof(Index));
+        }
 
         if (await _userManager.IsInRoleAsync(user, "Admin"))
             await _userManager.RemoveFromRoleAsync(user, "Admin");
@@ -118,4 +169,6 @@ public class UsersController : Controller
         TempData["Success"] = $"{user.UserName} admin rolü kaldırıldı.";
         return RedirectToAction(nameof(Index));
     }
+
+    
 }

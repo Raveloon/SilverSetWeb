@@ -34,7 +34,8 @@ namespace SilverSet.Controllers
                 var user = new AppUser
                 {
                     UserName = model.UserName,
-                    Email = model.Email
+                    Email = model.Email,
+                    CreatedAt = DateTime.UtcNow
                 };
 
                 var result = await _userManager.CreateAsync(user, model.Password);

@@ -170,6 +170,9 @@ namespace SilverSet.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
@@ -223,7 +226,7 @@ namespace SilverSet.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("SilverSet.Models.Entities.FeaturedGame", b =>
+            modelBuilder.Entity("SilverSet.Models.Entities.Asset", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -264,7 +267,7 @@ namespace SilverSet.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("FeaturedGames");
+                    b.ToTable("Assets");
                 });
 
             modelBuilder.Entity("SilverSet.Models.Entities.PasswordResetLog", b =>
