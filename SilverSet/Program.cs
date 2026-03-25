@@ -11,11 +11,9 @@ namespace SilverSet
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // DB
             builder.Services.AddDbContext<SilverSetContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-            // Identity
             builder.Services.AddIdentity<AppUser, AppRole>(options =>
             {
                 options.Password.RequiredLength = 6;
@@ -25,13 +23,14 @@ namespace SilverSet
                 options.Password.RequireLowercase = false;
                 options.User.RequireUniqueEmail = true;
 
-                // Lockout ayarlarý
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
                 options.Lockout.MaxFailedAccessAttempts = 5;
                 options.Lockout.AllowedForNewUsers = true;
             }).AddEntityFrameworkStores<SilverSetContext>().AddDefaultTokenProviders();
 
             builder.Services.AddControllersWithViews();
+
+            builder.Services.AddSignalR();
 
             builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
             {
@@ -43,17 +42,15 @@ namespace SilverSet
                 options.LoginPath = "/Admin/Account/Login";
                 options.AccessDeniedPath = "/Admin/Account/Login";
 
-                // Güvenlik ayarlarý
-                options.Cookie.HttpOnly = true;      
-                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;  
-                options.Cookie.SameSite = SameSiteMode.Strict; 
-                options.ExpireTimeSpan = TimeSpan.FromHours(2); 
-                options.SlidingExpiration = false;     
+                options.Cookie.HttpOnly = true;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                options.Cookie.SameSite = SameSiteMode.Strict;
+                options.ExpireTimeSpan = TimeSpan.FromHours(2);
+                options.SlidingExpiration = false;
             });
 
             var app = builder.Build();
 
-            // Pipeline
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Home/Error");
@@ -92,7 +89,8 @@ namespace SilverSet
                 pattern: "{controller=Home}/{action=Index}/{id?}")
                 .WithStaticAssets();
 
-            // Admin seeding
+            app.MapHub<SilverSet.Hubs.TicketHub>("/ticketHub");
+
             using (var scope = app.Services.CreateScope())
             {
                 var services = scope.ServiceProvider;
@@ -102,13 +100,11 @@ namespace SilverSet
                     var roleManager = services.GetRequiredService<RoleManager<AppRole>>();
                     var configuration = services.GetRequiredService<IConfiguration>();
 
-                    // Admin rolü yoksa oluþtur
                     if (!await roleManager.RoleExistsAsync("Admin"))
                     {
                         await roleManager.CreateAsync(new AppRole { Name = "Admin" });
                     }
 
-                    // TODO: Data seeding — appsettings'ten oku, veri sýzýntýsýna dikkat!
                     string adminName = configuration["AdminSetup:AdminName"];
                     string adminPassword = configuration["AdminSetup:Password"];
 
@@ -128,10 +124,9 @@ namespace SilverSet
                         }
                     }
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    var logger = services.GetRequiredService<ILogger<Program>>();
-                    logger.LogError(ex, "Seeding iþlemi sýrasýnda bir hata oluþtu.");
+
                 }
             }
 

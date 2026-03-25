@@ -1,0 +1,532 @@
+﻿@{
+    ViewData["Title"] = "About Us";
+}
+
+<style>
+    .about-hero {
+        padding: 6rem 0 4rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .about-hero::before {
+            content: '';
+            position: absolute;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--color-glow) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+    .about-eyebrow {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: var(--color-accent-dim);
+        margin-bottom: 1rem;
+    }
+
+    .about-title {
+        font-size: clamp(1.8rem, 5vw, 3rem);
+        font-weight: 800;
+        color: var(--color-accent);
+        line-height: 1.15;
+        margin-bottom: 1.25rem;
+        letter-spacing: -0.5px;
+    }
+
+    .about-subtitle {
+        font-size: 1rem;
+        color: var(--color-text-muted);
+        max-width: 540px;
+        line-height: 1.75;
+    }
+
+    /* Stats */
+    .stats-row {
+        padding: 3rem 0;
+        border-top: 1px solid var(--color-border);
+        border-bottom: 1px solid var(--color-border);
+        margin: 3rem 0;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-number {
+        font-size: clamp(1.8rem, 4vw, 2.5rem);
+        font-weight: 800;
+        color: var(--color-accent);
+        letter-spacing: -1px;
+        line-height: 1;
+        margin-bottom: 0.4rem;
+    }
+
+    .stat-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--color-accent-dim);
+    }
+
+    .stat-divider {
+        width: 1px;
+        background: var(--color-border);
+    }
+
+    /* Cards */
+    .mv-card {
+        background: rgba(255,255,255,0.02);
+        border: 1px solid var(--color-border);
+        border-radius: 16px;
+        padding: 2rem;
+        height: 100%;
+        transition: border-color 0.3s ease, transform 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .mv-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--color-accent-dim), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .mv-card:hover {
+            border-color: rgba(255,255,255,0.12);
+            transform: translateY(-4px);
+        }
+
+            .mv-card:hover::before {
+                opacity: 1;
+            }
+
+    .mv-card-icon {
+        width: 42px;
+        height: 42px;
+        border: 1px solid var(--color-border);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.25rem;
+        flex-shrink: 0;
+    }
+
+        .mv-card-icon svg {
+            width: 18px;
+            height: 18px;
+            stroke: var(--color-accent-dim);
+            fill: none;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+    .mv-card-label {
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 2.5px;
+        text-transform: uppercase;
+        color: var(--color-accent-dim);
+        margin-bottom: 0.5rem;
+    }
+
+    .mv-card-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--color-accent);
+        margin-bottom: 0.85rem;
+    }
+
+    .mv-card-text {
+        font-size: 0.875rem;
+        color: var(--color-text-muted);
+        line-height: 1.75;
+        margin: 0;
+    }
+
+    /* What we make */
+    .focus-section {
+        padding: 4rem 0;
+        border-top: 1px solid var(--color-border);
+    }
+
+    .focus-tag {
+        display: inline-block;
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--color-accent-dim);
+        border: 1px solid var(--color-border);
+        padding: 0.2rem 0.6rem;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+    }
+
+    .focus-title {
+        font-size: clamp(1.3rem, 3vw, 1.8rem);
+        font-weight: 700;
+        color: var(--color-accent);
+        margin-bottom: 1rem;
+    }
+
+    .focus-text {
+        font-size: 0.9rem;
+        color: var(--color-text-muted);
+        line-height: 1.8;
+    }
+
+    .asset-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        color: var(--color-accent-dim);
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--color-border);
+        border-radius: 20px;
+        padding: 0.3rem 0.85rem;
+        transition: all 0.2s ease;
+    }
+
+        .asset-pill:hover {
+            border-color: var(--color-accent-dim);
+            color: var(--color-accent);
+            background: rgba(255,255,255,0.05);
+        }
+
+    .asset-pill-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--color-accent-dim);
+    }
+
+    /* Values */
+    .value-item {
+        display: flex;
+        gap: 1.25rem;
+        align-items: flex-start;
+        padding: 1.4rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+        .value-item:last-child {
+            border-bottom: none;
+        }
+
+    .value-number {
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        color: var(--color-accent-dim);
+        opacity: 0.4;
+        padding-top: 0.2rem;
+        flex-shrink: 0;
+        width: 24px;
+    }
+
+    .value-content-title {
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: var(--color-accent);
+        margin-bottom: 0.3rem;
+    }
+
+    .value-content-text {
+        font-size: 0.83rem;
+        color: var(--color-text-muted);
+        line-height: 1.65;
+        margin: 0;
+    }
+
+    /* CTA */
+    .about-cta {
+        padding: 4rem 0;
+        border-top: 1px solid var(--color-border);
+        text-align: center;
+    }
+
+    .about-cta-title {
+        font-size: clamp(1.2rem, 3vw, 1.6rem);
+        font-weight: 700;
+        color: var(--color-accent);
+        margin-bottom: 0.75rem;
+    }
+
+    .about-cta-text {
+        font-size: 0.88rem;
+        color: var(--color-text-muted);
+        margin-bottom: 2rem;
+        max-width: 420px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .btn-cta-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: linear-gradient(135deg, var(--color-btn-from), var(--color-btn-to));
+        color: #0a0a0a;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        padding: 0.7rem 1.6rem;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+        .btn-cta-primary:hover {
+            box-shadow: 0 0 20px var(--color-glow-strong);
+            transform: translateY(-2px);
+            color: #0a0a0a;
+        }
+
+    .btn-cta-secondary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: transparent;
+        color: var(--color-accent-dim);
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        padding: 0.7rem 1.6rem;
+        border-radius: 8px;
+        border: 1px solid var(--color-border);
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+        .btn-cta-secondary:hover {
+            border-color: var(--color-accent-dim);
+            color: var(--color-accent);
+        }
+
+    @@media (max-width: 767px) {
+        .stats-row .d-flex {
+            gap: 2rem !important;
+        }
+
+        .stat-divider {
+            display: none;
+        }
+
+        .focus-section .row > div + div {
+            margin-top: 2.5rem;
+        }
+    }
+</style>
+
+<!-- HERO -->
+<section class="about-hero">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 col-lg-8">
+                <p class="about-eyebrow">Who We Are</p>
+                <h1 class="about-title">We don't just make games.<br />We build the tools behind them.</h1>
+                <p class="about-subtitle">
+                    SilverSet Studios is an independent creative studio focused on developing high-quality game assets, tools, and experiences — empowering developers and players alike.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- STATS -->
+<section>
+    <div class="container">
+        <div class="stats-row">
+            <div class="d-flex flex-wrap justify-content-center justify-content-md-start gap-4 gap-md-5 align-items-center">
+                <div class="stat-item">
+                    <div class="stat-number">3+</div>
+                    <div class="stat-label">Games in Development</div>
+                </div>
+                <div class="stat-divider" style="height:48px;"></div>
+                <div class="stat-item">
+                    <div class="stat-number">50+</div>
+                    <div class="stat-label">Assets Published</div>
+                </div>
+                <div class="stat-divider" style="height:48px;"></div>
+                <div class="stat-item">
+                    <div class="stat-number">10K+</div>
+                    <div class="stat-label">Community Members</div>
+                </div>
+                <div class="stat-divider" style="height:48px;"></div>
+                <div class="stat-item">
+                    <div class="stat-number">5+</div>
+                    <div class="stat-label">Years Experience</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- WHAT WE DO -->
+<section class="focus-section">
+    <div class="container">
+        <div class="row gy-5 align-items-center">
+            <div class="col-12 col-md-6">
+                <span class="focus-tag">Our Focus</span>
+                <h2 class="focus-title">Assets first. Games second.</h2>
+                <p class="focus-text">
+                    While we develop our own games, the core of what we do is asset creation. We design and publish production-ready game assets — 3D models, environments, UI kits, shaders, and more — that other developers can build with on platforms like Fab.
+                </p>
+                <p class="focus-text mt-3">
+                    Every asset we release reflects the same standards we hold ourselves to when building our own titles: polished, optimized, and built to last.
+                </p>
+            </div>
+            <div class="col-12 col-md-5 offset-md-1">
+                <div class="d-flex flex-column gap-3">
+                    <div class="mv-card">
+                        <div class="d-flex align-items-center gap-3 mb-2">
+                            <div class="mv-card-icon">
+                                <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /></svg>
+                            </div>
+                            <h3 class="mv-card-title mb-0">3D Assets & Environments</h3>
+                        </div>
+                        <p class="mv-card-text">Modular, game-ready assets optimized for Unreal Engine and Unity workflows.</p>
+                    </div>
+                    <div class="mv-card">
+                        <div class="d-flex align-items-center gap-3 mb-2">
+                            <div class="mv-card-icon">
+                                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" /></svg>
+                            </div>
+                            <h3 class="mv-card-title mb-0">UI Kits & Tools</h3>
+                        </div>
+                        <p class="mv-card-text">Complete interface systems designed for fast integration into any game project.</p>
+                    </div>
+                    <div class="mv-card">
+                        <div class="d-flex align-items-center gap-3 mb-2">
+                            <div class="mv-card-icon">
+                                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 8v4l3 3" /></svg>
+                            </div>
+                            <h3 class="mv-card-title mb-0">Original Game Titles</h3>
+                        </div>
+                        <p class="mv-card-text">Our own games — built with the same assets and tools we publish for others.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- MISSION & VISION -->
+<section style="padding: 4rem 0; border-top: 1px solid var(--color-border);">
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-12">
+                <p class="about-eyebrow">What Drives Us</p>
+            </div>
+        </div>
+        <div class="row g-4">
+            <div class="col-12 col-md-6">
+                <div class="mv-card">
+                    <p class="mv-card-label">Mission</p>
+                    <h2 class="mv-card-title">Empower creators, entertain players</h2>
+                    <p class="mv-card-text">
+                        Our mission is to create assets and experiences that both inspire other developers and bring joy to players. Whether someone is building with our assets or playing our games, we want the quality to speak for itself.
+                    </p>
+                </div>
+            </div>
+            <div class="col-12 col-md-6">
+                <div class="mv-card">
+                    <p class="mv-card-label">Vision</p>
+                    <h2 class="mv-card-title">A studio that shapes the ecosystem</h2>
+                    <p class="mv-card-text">
+                        We envision SilverSet Studios as a studio that contributes to the game development ecosystem — not just as a game maker, but as a reliable creative partner for developers worldwide building the next generation of experiences.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- VALUES -->
+<section style="padding: 4rem 0; border-top: 1px solid var(--color-border);">
+    <div class="container">
+        <div class="row gy-4">
+            <div class="col-12 col-lg-4 mb-2 mb-lg-0">
+                <p class="about-eyebrow">How We Work</p>
+                <h2 class="focus-title">Our Core Values</h2>
+                <p class="focus-text">
+                    From the first concept to the final release, these principles guide every decision we make.
+                </p>
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    <span class="asset-pill"><span class="asset-pill-dot"></span>Quality Over Quantity</span>
+                    <span class="asset-pill"><span class="asset-pill-dot"></span>Community First</span>
+                    <span class="asset-pill"><span class="asset-pill-dot"></span>Open Iteration</span>
+                </div>
+            </div>
+            <div class="col-12 col-lg-7 offset-lg-1">
+                <div class="value-item">
+                    <span class="value-number">01</span>
+                    <div>
+                        <p class="value-content-title">Quality over quantity</p>
+                        <p class="value-content-text">We'd rather ship one exceptional asset than ten average ones. Every release goes through rigorous review before it reaches developers or players.</p>
+                    </div>
+                </div>
+                <div class="value-item">
+                    <span class="value-number">02</span>
+                    <div>
+                        <p class="value-content-title">Built for real workflows</p>
+                        <p class="value-content-text">Our assets are designed by people who actually use them in game production. We understand what developers need because we are developers.</p>
+                    </div>
+                </div>
+                <div class="value-item">
+                    <span class="value-number">03</span>
+                    <div>
+                        <p class="value-content-title">Community driven</p>
+                        <p class="value-content-text">Our community shapes what we build next. Feedback, requests, and conversations with our players and developer partners directly influence our roadmap.</p>
+                    </div>
+                </div>
+                <div class="value-item">
+                    <span class="value-number">04</span>
+                    <div>
+                        <p class="value-content-title">Continuous improvement</p>
+                        <p class="value-content-text">We update, refine, and improve our releases. Publishing something isn't the finish line — it's the starting point.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="about-cta">
+    <div class="container">
+        <h2 class="about-cta-title">Want to work with what we build?</h2>
+        <p class="about-cta-text">Browse our FAB Projects or join our community to stay up to date with everything we're working on.</p>
+        <div class="d-flex flex-wrap gap-3 justify-content-center">
+            <a asp-controller="Assets" asp-action="Index" class="btn-cta-primary">
+                Browse FAB Projects
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+            </a>
+            <a asp-controller="Account" asp-action="Register" class="btn-cta-secondary">
+                Join the Community
+            </a>
+        </div>
+    </div>
+</section>
