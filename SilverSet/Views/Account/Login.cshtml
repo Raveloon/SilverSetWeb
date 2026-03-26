@@ -1,4 +1,5 @@
 ﻿@model SilverSet.Models.ViewModels.LoginViewModel
+@inject IConfiguration Configuration
 
 @{
     ViewData["Title"] = "Secure Access Terminal";
@@ -13,6 +14,7 @@
     <title>@ViewData["Title"] - SilverSet Studios</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 
     <style>
         body {
@@ -208,7 +210,10 @@
         </div>
 
         <form asp-action="Login" asp-controller="Account" method="post">
+            @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="text-danger small mb-4 text-center"></div>
+
+            <input type="text" name="TerminalAccessCode" style="display:none !important; position:absolute; left:-9999px;" tabindex="-1" autocomplete="off" />
 
             <div class="mb-4">
                 <label asp-for="UserName" class="form-label text-accent fw-medium">USERNAME</label>
@@ -247,6 +252,10 @@
                 <span asp-validation-for="Password" class="text-danger small"></span>
             </div>
 
+            <div class="mb-4 d-flex justify-content-center">
+                <div class="cf-turnstile" data-sitekey="@Configuration["CloudflareTurnstile:SiteKey"]" data-theme="dark"></div>
+            </div>
+
             <div class="form-check mb-5 d-flex align-items-center">
                 <input asp-for="RememberMe"
                        class="form-check-input terminal-checkbox me-2"
@@ -278,7 +287,7 @@
             const isHidden = input.type === 'password';
             input.type = isHidden ? 'text' : 'password';
             document.getElementById('icon-closed').style.display = isHidden ? 'none' : '';
-            document.getElementById('icon-open').style.display   = isHidden ? ''     : 'none';
+            document.getElementById('icon-open').style.display   = isHidden ? ''      : 'none';
         }
     </script>
 </body>

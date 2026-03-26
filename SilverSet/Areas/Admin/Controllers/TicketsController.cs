@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SilverSet.Data;
@@ -12,11 +13,14 @@ namespace SilverSet.Areas.Admin.Controllers;
 public class TicketsController : Controller
 {
     private readonly SilverSetContext _context;
+    private readonly UserManager<AppUser> _userManager;
 
-    public TicketsController(SilverSetContext context)
+    public TicketsController(SilverSetContext context, UserManager<AppUser> userManager)
     {
         _context = context;
+        _userManager = userManager;
     }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CloseTicket(int id, string closureMessage)
@@ -62,6 +66,37 @@ public class TicketsController : Controller
 
         return RedirectToAction(nameof(Details), new { id = ticket.Id });
     }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> BanUser(int ticketId, string banReason)
+    {
+        var ticket = await _context.Tickets.Include(t => t.User).FirstOrDefaultAsync(t => t.Id == ticketId);
+        if (ticket == null || ticket.User == null || string.IsNullOrWhiteSpace(banReason)) return RedirectToAction(nameof(Index));
+
+        var user = ticket.User;
+        user.IsBanned = true;
+        user.BanReason = banReason.Trim();
+        user.LockoutEnd = DateTimeOffset.MaxValue;
+
+        await _userManager.UpdateAsync(user);
+
+        var systemMsg = new TicketMessage
+        {
+            TicketId = ticketId,
+            SenderId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!),
+            Content = "[BANNED] " + banReason.Trim(),
+            IsAdminReply = true,
+            SentAt = DateTime.UtcNow
+        };
+
+        ticket.IsOpen = false;
+        _context.TicketMessages.Add(systemMsg);
+        await _context.SaveChangesAsync();
+
+        return RedirectToAction(nameof(Details), new { id = ticketId });
+    }
+
     public async Task<IActionResult> Index(string searchTerm, string status, string timeRange, int page = 1)
     {
         int pageSize = 10;
@@ -69,7 +104,7 @@ public class TicketsController : Controller
 
         if (!string.IsNullOrEmpty(searchTerm))
         {
-            query = query.Where(t => t.User.UserName.Contains(searchTerm) || t.Subject.Contains(searchTerm));
+            query = query.Where(t => t.User!.UserName!.Contains(searchTerm) || t.Subject.Contains(searchTerm));
         }
 
         if (status == "open") query = query.Where(t => t.IsOpen);
@@ -120,6 +155,4 @@ public class TicketsController : Controller
 
         return View(ticket);
     }
-
-
 }

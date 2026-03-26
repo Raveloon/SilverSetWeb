@@ -33,6 +33,7 @@
         text-align: center;
         width: 80%;
     }
+
     .text-muted {
         color: #aaa !important;
     }
@@ -151,13 +152,13 @@
                 INITIATED BY: @Model.User?.UserName | @Model.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy HH:mm")
             </div>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 align-items-center">
             <a asp-action="Index" class="btn btn-return px-4 fw-bold">
                 <i class="bi bi-arrow-left"></i> RETURN TO LIST
             </a>
             @if (Model.IsOpen)
             {
-                <button type="button" class="btn btn-outline-danger px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#closeModal">
+                <button type="button" class="btn btn-outline-warning px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#closeModal" style="color:#fbbf24; border-color:#fbbf24;">
                     CLOSE MISSION
                 </button>
             }
@@ -167,28 +168,37 @@
                     RE-OPEN TICKET
                 </button>
             }
+
+            @if (Model.User != null && !Model.User.IsBanned)
+            {
+                <button type="button" class="btn btn-outline-danger px-4 fw-bold ms-2" data-bs-toggle="modal" data-bs-target="#banModal" style="border-color: #ef4444; color: #ef4444;">
+                    <i class="bi bi-person-x-fill"></i> BAN OPERATIVE
+                </button>
+            }
+            else if (Model.User != null && Model.User.IsBanned)
+            {
+                <span class="badge bg-danger ms-2 px-3 py-2" style="font-size: 0.75rem; letter-spacing: 2px;">BANNED</span>
+            }
         </div>
     </div>
 
     <div class="admin-chat-container shadow-lg">
         <div class="admin-chat-messages" id="adminChatBox">
-            <div class="admin-chat-messages" id="adminChatBox">
-                @foreach (var msg in Model.Messages.OrderBy(m => m.SentAt))
+            @foreach (var msg in Model.Messages.OrderBy(m => m.SentAt))
+            {
+                if (msg.Content.StartsWith("[CLOSED]") || msg.Content.StartsWith("[RE-OPENED]") || msg.Content.StartsWith("[BANNED]"))
                 {
-                    if (msg.Content.StartsWith("[CLOSED]") || msg.Content.StartsWith("[RE-OPENED]"))
-                    {
-                        <div class="msg-system">
-                            <i class="bi bi-info-circle me-1"></i> @msg.Content
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="msg @(msg.IsAdminReply ? "msg-admin" : "msg-user")">
-                            @msg.Content
-                        </div>
-                    }
+                    <div class="msg-system" style="@(msg.Content.StartsWith("[BANNED]") ? "color:#ef4444; border-color:#ef4444;" : "")">
+                        <i class="bi bi-info-circle me-1"></i> @msg.Content
+                    </div>
                 }
-            </div>
+                else
+                {
+                    <div class="msg @(msg.IsAdminReply ? "msg-admin" : "msg-user")">
+                        @msg.Content
+                    </div>
+                }
+            }
         </div>
 
         @if (Model.IsOpen)
@@ -223,7 +233,7 @@
                 </div>
                 <div class="modal-footer border-secondary">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">ABORT</button>
-                    <button type="submit" class="btn btn-danger">CONFIRM CLOSURE</button>
+                    <button type="submit" class="btn btn-warning fw-bold text-dark">CONFIRM CLOSURE</button>
                 </div>
             </form>
         </div>
@@ -243,7 +253,28 @@
                 </div>
                 <div class="modal-footer border-secondary">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">CANCEL</button>
-                    <button type="submit" class="btn btn-success">RE-OPEN NOW</button>
+                    <button type="submit" class="btn btn-success fw-bold">RE-OPEN NOW</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="banModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-danger">
+            <form asp-action="BanUser" method="post">
+                <input type="hidden" name="ticketId" value="@Model.Id" />
+                <div class="modal-header" style="border-bottom: 1px solid #dc3545;">
+                    <h5 class="modal-title text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i> PERMANENT BAN</h5>
+                </div>
+                <div class="modal-body">
+                    <p class="text-white small mb-3">You are about to permanently ban <strong>@Model.User?.UserName</strong> from the system. This action will lock their account, block future logins, and close this ticket immediately. State your reason clearly for the audit logs.</p>
+                    <textarea name="banReason" class="form-control terminal-input" rows="4" placeholder="Official reason for banishment..." required></textarea>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">ABORT</button>
+                    <button type="submit" class="btn btn-danger fw-bold">EXECUTE BAN</button>
                 </div>
             </form>
         </div>

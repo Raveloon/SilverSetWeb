@@ -14,6 +14,10 @@ public class AssetsController : Controller
     private readonly SilverSetContext _context;
     private readonly IWebHostEnvironment _env;
 
+    private readonly string[] _allowedExtensions = { ".jpg", ".jpeg", ".png", ".webp" };
+    private readonly string[] _allowedMimeTypes = { "image/jpeg", "image/png", "image/x-png", "image/webp" };
+    private readonly long _maxFileSize = 10 * 1024 * 1024;
+
     public AssetsController(SilverSetContext context, IWebHostEnvironment env)
     {
         _context = context;
@@ -24,7 +28,7 @@ public class AssetsController : Controller
     {
         if (!User.IsInRole("Admin"))
         {
-            context.Result = new RedirectToActionResult("Login", "Account", new { area = "Admin" });
+            context.Result = new RedirectToActionResult("Login", "Account", new { area = "" });
         }
         base.OnActionExecuting(context);
     }
@@ -32,6 +36,7 @@ public class AssetsController : Controller
     public async Task<IActionResult> Index()
     {
         var games = await _context.Assets
+            .AsNoTracking()
             .OrderBy(g => g.DisplayOrder)
             .ToListAsync();
         return View(games);
@@ -48,24 +53,22 @@ public class AssetsController : Controller
     {
         if (imageFile != null && imageFile.Length > 0)
         {
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
             var ext = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
-            if (!allowedExtensions.Contains(ext))
+            if (!_allowedExtensions.Contains(ext))
             {
                 ModelState.AddModelError("ImagePath", "Sadece jpg, jpeg, png, webp dosyaları yüklenebilir.");
                 return View(model);
             }
 
-            var allowedMimeTypes = new[] { "image/jpeg", "image/png", "image/webp" };
-            if (!allowedMimeTypes.Contains(imageFile.ContentType.ToLowerInvariant()))
+            if (!_allowedMimeTypes.Contains(imageFile.ContentType.ToLowerInvariant()))
             {
                 ModelState.AddModelError("ImagePath", "Geçersiz dosya türü.");
                 return View(model);
             }
 
-            if (imageFile.Length > 5 * 1024 * 1024)
+            if (imageFile.Length > _maxFileSize)
             {
-                ModelState.AddModelError("ImagePath", "Dosya boyutu 5MB'dan küçük olmalı.");
+                ModelState.AddModelError("ImagePath", "Dosya boyutu 10MB'dan küçük olmalı.");
                 return View(model);
             }
 
@@ -114,24 +117,22 @@ public class AssetsController : Controller
 
         if (imageFile != null && imageFile.Length > 0)
         {
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
             var ext = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
-            if (!allowedExtensions.Contains(ext))
+            if (!_allowedExtensions.Contains(ext))
             {
                 ModelState.AddModelError("ImagePath", "Sadece jpg, jpeg, png, webp dosyaları yüklenebilir.");
                 return View(model);
             }
 
-            var allowedMimeTypes = new[] { "image/jpeg", "image/png", "image/webp" };
-            if (!allowedMimeTypes.Contains(imageFile.ContentType.ToLowerInvariant()))
+            if (!_allowedMimeTypes.Contains(imageFile.ContentType.ToLowerInvariant()))
             {
                 ModelState.AddModelError("ImagePath", "Geçersiz dosya türü.");
                 return View(model);
             }
 
-            if (imageFile.Length > 5 * 1024 * 1024)
+            if (imageFile.Length > _maxFileSize)
             {
-                ModelState.AddModelError("ImagePath", "Dosya boyutu 5MB'dan küçük olmalı.");
+                ModelState.AddModelError("ImagePath", "Dosya boyutu 10MB'dan küçük olmalı.");
                 return View(model);
             }
 
@@ -149,6 +150,7 @@ public class AssetsController : Controller
 
             using (var stream = new FileStream(filePath, FileMode.Create))
             {
+                await stream.FlushAsync();
                 await imageFile.CopyToAsync(stream);
             }
 
@@ -165,6 +167,8 @@ public class AssetsController : Controller
         return View(model);
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> ToggleVisibility(int id)
     {
         var game = await _context.Assets.FindAsync(id);
@@ -177,6 +181,8 @@ public class AssetsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
         var game = await _context.Assets.FindAsync(id);

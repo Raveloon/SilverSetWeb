@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SilverSet.Data;
 using SilverSet.Models.Entities;
 using SilverSet.Models.ViewModels;
+using SilverSet.Services;
 using System.Security.Claims;
 
 namespace SilverSet.Controllers;
@@ -14,12 +15,14 @@ public class AccountController : Controller
     private readonly UserManager<AppUser> _userManager;
     private readonly SignInManager<AppUser> _signInManager;
     private readonly SilverSetContext _context;
+    private readonly TurnstileService _turnstileService;
 
-    public AccountController(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager, SilverSetContext context)
+    public AccountController(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager, SilverSetContext context, TurnstileService turnstileService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _context = context;
+        _turnstileService = turnstileService;
     }
 
     [HttpGet]
@@ -31,8 +34,20 @@ public class AccountController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Register(RegisterViewModel model)
+    public async Task<IActionResult> Register(RegisterViewModel model, string? TerminalAccessCode, [FromForm(Name = "cf-turnstile-response")] string turnstileToken)
     {
+        if (!string.IsNullOrEmpty(TerminalAccessCode))
+        {
+            return RedirectToAction("Index", "Home");
+        }
+
+        var isTurnstileValid = await _turnstileService.VerifyAsync(turnstileToken);
+        if (!isTurnstileValid)
+        {
+            ModelState.AddModelError(string.Empty, "Security verification failed.");
+            return View(model);
+        }
+
         if (!ModelState.IsValid) return View(model);
 
         var user = new AppUser
@@ -81,8 +96,20 @@ public class AccountController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Login(LoginViewModel model)
+    public async Task<IActionResult> Login(LoginViewModel model, string? TerminalAccessCode, [FromForm(Name = "cf-turnstile-response")] string turnstileToken)
     {
+        if (!string.IsNullOrEmpty(TerminalAccessCode))
+        {
+            return RedirectToAction("Index", "Home");
+        }
+
+        var isTurnstileValid = await _turnstileService.VerifyAsync(turnstileToken);
+        if (!isTurnstileValid)
+        {
+            ModelState.AddModelError(string.Empty, "Security verification failed.");
+            return View(model);
+        }
+
         if (!ModelState.IsValid) return View(model);
 
         string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
@@ -91,6 +118,23 @@ public class AccountController : Controller
 
         if (user != null)
         {
+            if (user.IsBanned)
+            {
+                ModelState.AddModelError(string.Empty, $"Account suspended permanently. Reason: {user.BanReason}");
+
+                _context.UserLoginLogs.Add(new UserLoginLog
+                {
+                    UserName = model.UserName,
+                    Email = user.Email ?? "Not Found",
+                    LoginTime = DateTime.UtcNow,
+                    IsSuccessful = false,
+                    IpAddress = clientIp
+                });
+                await _context.SaveChangesAsync();
+
+                return View(model);
+            }
+
             var result = await _signInManager.PasswordSignInAsync(user, model.Password, model.RememberMe, lockoutOnFailure: true);
 
             if (result.Succeeded) isSuccess = true;
@@ -143,8 +187,20 @@ public class AccountController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model, string? TerminalAccessCode, [FromForm(Name = "cf-turnstile-response")] string turnstileToken)
     {
+        if (!string.IsNullOrEmpty(TerminalAccessCode))
+        {
+            return RedirectToAction("Index", "Home");
+        }
+
+        var isTurnstileValid = await _turnstileService.VerifyAsync(turnstileToken);
+        if (!isTurnstileValid)
+        {
+            ModelState.AddModelError(string.Empty, "Security verification failed.");
+            return View(model);
+        }
+
         if (!ModelState.IsValid) return View(model);
 
         string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
@@ -194,8 +250,20 @@ public class AccountController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+    public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model, string? TerminalAccessCode, [FromForm(Name = "cf-turnstile-response")] string turnstileToken)
     {
+        if (!string.IsNullOrEmpty(TerminalAccessCode))
+        {
+            return RedirectToAction("Index", "Home");
+        }
+
+        var isTurnstileValid = await _turnstileService.VerifyAsync(turnstileToken);
+        if (!isTurnstileValid)
+        {
+            ModelState.AddModelError(string.Empty, "Security verification failed.");
+            return View(model);
+        }
+
         if (!ModelState.IsValid) return View(model);
 
         var user = await _userManager.FindByEmailAsync(model.Email);

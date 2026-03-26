@@ -6,16 +6,19 @@ using SilverSet.Models.Entities;
 using SilverSet.Models.ViewModels;
 using System.Security.Claims;
 using Microsoft.AspNetCore.RateLimiting;
+using SilverSet.Services;
 
 namespace SilverSet.Controllers;
 
 public class ContactController : Controller
 {
     private readonly SilverSetContext _context;
+    private readonly TurnstileService _turnstileService;
 
-    public ContactController(SilverSetContext context)
+    public ContactController(SilverSetContext context, TurnstileService turnstileService)
     {
         _context = context;
+        _turnstileService = turnstileService;
     }
 
     [HttpGet]
@@ -45,8 +48,20 @@ public class ContactController : Controller
     [Authorize]
     [EnableRateLimiting("Strict")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> CreateTicket(string subject, string message)
+    public async Task<IActionResult> CreateTicket(string subject, string message, string? TerminalAccessCode, [FromForm(Name = "cf-turnstile-response")] string turnstileToken)
     {
+        if (!string.IsNullOrEmpty(TerminalAccessCode))
+        {
+            return RedirectToAction(nameof(Index));
+        }
+
+        var isTurnstileValid = await _turnstileService.VerifyAsync(turnstileToken);
+        if (!isTurnstileValid)
+        {
+            TempData["Error"] = "Security verification failed. Please try again.";
+            return RedirectToAction(nameof(Index));
+        }
+
         var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!int.TryParse(userIdString, out int userId))
         {
@@ -95,6 +110,7 @@ public class ContactController : Controller
         TempData["Success"] = "Secure line established. Our team will respond shortly.";
         return RedirectToAction(nameof(Index));
     }
+
     [Authorize]
     public async Task<IActionResult> History(int page = 1)
     {

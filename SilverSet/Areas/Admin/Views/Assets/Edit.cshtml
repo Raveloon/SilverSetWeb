@@ -6,7 +6,6 @@
 }
 
 <style>
-    /* Create.cshtml ile aynı style bloğu */
     .form-card {
         background: rgba(255,255,255,0.02);
         border: 1px solid var(--admin-border);
@@ -124,9 +123,10 @@
         font-size: 0.78rem;
         color: #9ca3af;
     }
-        .btn-submit:hover {
-            opacity: 0.85;
-        }
+
+    .btn-submit:hover {
+        opacity: 0.85;
+    }
 
     .btn-cancel {
         background: transparent;
@@ -188,7 +188,7 @@
                         </svg>
                     </div>
                     <div class="upload-text">Görsel yüklemek için tıkla veya sürükle bırak</div>
-                    <div class="upload-sub">JPG, PNG, WEBP — max 5MB</div>
+                    <div class="upload-sub">JPG, PNG, WEBP — max 10MB</div>
                     <div class="upload-preview" id="uploadPreview" style="display:none">
                         <img id="previewImg" src="" alt="Preview" />
                         <span id="fileName"></span>

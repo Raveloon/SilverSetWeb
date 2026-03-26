@@ -283,7 +283,7 @@ else
                 var userRoles = ViewBag.UserRoles as Dictionary<int, IList<string>>;
                 var roles = userRoles != null && userRoles.ContainsKey(user.Id) ? userRoles[user.Id] : new List<string>();
                 var isAdmin = roles.Contains("Admin");
-                var isBanned = user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.UtcNow;
+                var isBanned = user.IsBanned;
                 bool isRoot = user.UserName == ViewBag.RootAdminName;
                 bool isSelf = user.UserName == User.Identity?.Name;
                 bool isCurrentUserRoot = User.Identity?.Name == ViewBag.RootAdminName;
@@ -322,7 +322,7 @@ else
                     <td>
                         @if (isBanned)
                         {
-                            <span class="badge-banned">Banned</span>
+                            <span class="badge-banned" title="@user.BanReason">Banned</span>
                         }
                         else
                         {
@@ -352,10 +352,9 @@ else
                                 }
                                 else
                                 {
-                                    <form asp-area="Admin" asp-controller="Users" asp-action="Ban" asp-route-id="@user.Id" method="post" onsubmit="return confirm('Ban @user.UserName?')">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn-action btn-danger">Ban</button>
-                                    </form>
+                                    <button type="button" class="btn-action btn-danger" data-bs-toggle="modal" data-bs-target="#banModal-@user.Id">
+                                        Ban
+                                    </button>
                                 }
 
                                 if (isCurrentUserRoot)
@@ -379,6 +378,32 @@ else
                         </div>
                     </td>
                 </tr>
+
+                @if (!isBanned && !isRoot && !isSelf)
+                {
+                    <div class="modal fade" id="banModal-@user.Id" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content" style="background: rgba(15, 15, 15, 0.95); border: 1px solid #ef4444;">
+                                <form asp-area="Admin" asp-controller="Users" asp-action="Ban" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@user.Id" />
+                                    <div class="modal-header" style="border-bottom: 1px solid rgba(239, 68, 68, 0.3);">
+                                        <h5 class="modal-title" style="color: #ef4444; font-weight: 800; font-size: 0.9rem; letter-spacing: 2px;"><i class="bi bi-exclamation-triangle-fill me-2"></i> PERMANENT BAN</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.7rem; opacity: 0.5;"></button>
+                                    </div>
+                                    <div class="modal-body text-start">
+                                        <p style="color: #ccc; font-size: 0.85rem; margin-bottom: 1rem; line-height: 1.5;">You are about to permanently ban <strong>@user.UserName</strong>. State your reason clearly for the audit logs.</p>
+                                        <textarea name="banReason" class="form-control search-input w-100" rows="3" placeholder="Official reason for banishment..." required></textarea>
+                                    </div>
+                                    <div class="modal-footer" style="border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                                        <button type="button" class="btn-action" data-bs-dismiss="modal">ABORT</button>
+                                        <button type="submit" class="btn-action btn-danger" style="background: rgba(239, 68, 68, 0.1);">EXECUTE BAN</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                }
             }
         </tbody>
     </table>

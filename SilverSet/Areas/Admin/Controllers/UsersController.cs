@@ -27,7 +27,7 @@ public class UsersController : Controller
     {
         if (!User.IsInRole("Admin"))
         {
-            context.Result = new RedirectToActionResult("Login", "Account", new { area = "Admin" });
+            context.Result = new RedirectToActionResult("Login", "Account", new { area = "" });
         }
         base.OnActionExecuting(context);
     }
@@ -35,12 +35,13 @@ public class UsersController : Controller
     public async Task<IActionResult> Index(string? search, string? filter, int page = 1)
     {
         int pageSize = 20;
+        var query = _userManager.Users.AsNoTracking().AsQueryable();
 
-        var query = _userManager.Users.AsQueryable();
         if (!string.IsNullOrEmpty(search))
-            query = query.Where(u =>
-                u.UserName.Contains(search) ||
-                (u.Email != null && u.Email.Contains(search)));
+        {
+            query = query.Where(u => u.UserName!.Contains(search) || (u.Email != null && u.Email.Contains(search)));
+        }
+
         if (filter == "admins")
         {
             var adminUsers = await _userManager.GetUsersInRoleAsync("Admin");
@@ -49,7 +50,7 @@ public class UsersController : Controller
         }
         else if (filter == "banned")
         {
-            query = query.Where(u => u.LockoutEnd != null && u.LockoutEnd > DateTimeOffset.UtcNow);
+            query = query.Where(u => u.IsBanned);
         }
         else if (filter == "users")
         {
@@ -58,13 +59,8 @@ public class UsersController : Controller
             query = query.Where(u => !adminIds.Contains(u.Id));
         }
 
-        ViewBag.Filter = filter;
-
-        ViewBag.TotalCount = await _userManager.Users.CountAsync();
-        ViewBag.FilteredCount = await query.CountAsync();
-        ViewBag.Search = search;
-        ViewBag.CurrentPage = page;
-        ViewBag.TotalPages = (int)Math.Ceiling(await query.CountAsync() / (double)pageSize);
+        int totalCount = await _userManager.Users.CountAsync();
+        int filteredCount = await query.CountAsync();
 
         var users = await query
             .OrderBy(u => u.UserName)
@@ -78,31 +74,41 @@ public class UsersController : Controller
             userRoles[user.Id] = await _userManager.GetRolesAsync(user);
         }
 
+        ViewBag.Filter = filter;
+        ViewBag.TotalCount = totalCount;
+        ViewBag.FilteredCount = filteredCount;
+        ViewBag.Search = search;
+        ViewBag.CurrentPage = page;
+        ViewBag.TotalPages = (int)Math.Ceiling(filteredCount / (double)pageSize);
         ViewBag.UserRoles = userRoles;
         ViewBag.AdminCount = (await _userManager.GetUsersInRoleAsync("Admin")).Count;
-        ViewBag.BannedCount = await _userManager.Users.CountAsync(u => u.LockoutEnd != null && u.LockoutEnd > DateTimeOffset.UtcNow);
+        ViewBag.BannedCount = await _userManager.Users.CountAsync(u => u.IsBanned);
         ViewBag.RootAdminName = _configuration["AdminSetup:AdminName"];
+
         return View(users);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Ban(int id)
+    public async Task<IActionResult> Ban(int id, string banReason)
     {
         var user = await _userManager.FindByIdAsync(id.ToString());
-        if (user == null) return NotFound();
+        string rootAdmin = _configuration["AdminSetup:AdminName"] ?? "Admin";
 
-        // GÜVENLİK KORUMASI: Admin kendini veya Kök(Root) Admin'i banlayamaz
-        if (user.UserName == User.Identity?.Name || user.UserName == "Admin")
+        if (user == null || string.IsNullOrWhiteSpace(banReason)) return NotFound();
+
+        if (user.UserName == User.Identity?.Name || user.UserName == rootAdmin)
         {
-            TempData["Error"] = "Kendinizi veya Kök(Root) Admin'i banlayamazsınız!";
+            TempData["Error"] = "Security Protocol: You cannot suspend yourself or the Root Admin.";
             return RedirectToAction(nameof(Index));
         }
 
-        await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
-        await _userManager.SetLockoutEnabledAsync(user, true);
+        user.IsBanned = true;
+        user.BanReason = banReason.Trim();
+        user.LockoutEnd = DateTimeOffset.MaxValue;
 
-        TempData["Success"] = $"{user.UserName} banlandı.";
+        await _userManager.UpdateAsync(user);
+        TempData["Success"] = $"Operative {user.UserName} has been permanently suspended.";
         return RedirectToAction(nameof(Index));
     }
 
@@ -113,9 +119,12 @@ public class UsersController : Controller
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user == null) return NotFound();
 
-        await _userManager.SetLockoutEndDateAsync(user, null);
+        user.IsBanned = false;
+        user.BanReason = null;
+        user.LockoutEnd = null;
 
-        TempData["Success"] = $"{user.UserName} banı kaldırıldı.";
+        await _userManager.UpdateAsync(user);
+        TempData["Success"] = $"Access restored for {user.UserName}.";
         return RedirectToAction(nameof(Index));
     }
 
@@ -123,11 +132,10 @@ public class UsersController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> MakeAdmin(int id)
     {
-        // KORUMA: Sadece Root Admin yetki verebilir
         string rootAdmin = _configuration["AdminSetup:AdminName"] ?? "Admin";
         if (User.Identity?.Name != rootAdmin)
         {
-            TempData["Error"] = "Yetki Hatası: Sadece Kök (Root) Admin başka birini admin yapabilir!";
+            TempData["Error"] = "Unauthorized: Only Root Admin can promote operatives.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -137,7 +145,7 @@ public class UsersController : Controller
         if (!await _userManager.IsInRoleAsync(user, "Admin"))
             await _userManager.AddToRoleAsync(user, "Admin");
 
-        TempData["Success"] = $"{user.UserName} admin yapıldı.";
+        TempData["Success"] = $"{user.UserName} promoted to Administrator.";
         return RedirectToAction(nameof(Index));
     }
 
@@ -145,30 +153,26 @@ public class UsersController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RemoveAdmin(int id)
     {
-        // KORUMA: Sadece Root Admin yetki alabilir
-        string rootAdmin = _configuration["AdminSetup:AdminName"] ;
+        string rootAdmin = _configuration["AdminSetup:AdminName"] ?? "Admin";
         if (User.Identity?.Name != rootAdmin)
         {
-            TempData["Error"] = "Yetki Hatası: Sadece Kök (Root) Admin yetki alabilir!";
+            TempData["Error"] = "Unauthorized: Only Root Admin can revoke privileges.";
             return RedirectToAction(nameof(Index));
         }
 
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user == null) return NotFound();
 
-        // GÜVENLİK KORUMASI: Admin kendi yetkisini veya Kök(Root) Admin'in yetkisini alamaz
         if (user.UserName == User.Identity?.Name || user.UserName == rootAdmin)
         {
-            TempData["Error"] = "Kritik Hata: Kendi yetkinizi veya Kök(Root) Admin'in yetkisini kaldıramazsınız!";
+            TempData["Error"] = "Critical: You cannot revoke your own or Root Admin's privileges.";
             return RedirectToAction(nameof(Index));
         }
 
         if (await _userManager.IsInRoleAsync(user, "Admin"))
             await _userManager.RemoveFromRoleAsync(user, "Admin");
 
-        TempData["Success"] = $"{user.UserName} admin rolü kaldırıldı.";
+        TempData["Success"] = $"{user.UserName} privileges revoked.";
         return RedirectToAction(nameof(Index));
     }
-
-    
 }

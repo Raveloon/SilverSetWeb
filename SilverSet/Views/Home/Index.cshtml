@@ -1,6 +1,7 @@
 ﻿@model List<SilverSet.Models.Entities.Asset>
 @{
     ViewData["Title"] = "Home";
+    bool isCarousel = Model.Count > 3;
 }
 
 <style>
@@ -311,13 +312,69 @@
         font-size: 0.95rem;
     }
 
+    .games-carousel-container {
+        position: relative;
+        width: 100%;
+        padding: 0 3rem;
+    }
+
+    .games-carousel {
+        display: flex;
+        gap: 1.5rem;
+        overflow-x: auto;
+        scroll-behavior: smooth;
+        scroll-snap-type: x mandatory;
+        padding-bottom: 2rem;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .games-grid {
+        display: flex;
+        gap: 1.5rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        width: 100%;
+    }
+
+    .games-carousel::-webkit-scrollbar {
+        display: none;
+    }
+
+    .carousel-nav-btn {
+        width: 48px;
+        height: 48px;
+        background: rgba(18, 18, 18, 0.9);
+        border: 1px solid rgba(200, 200, 200, 0.2);
+        color: var(--color-accent-bright);
+        transition: all 0.3s ease;
+        backdrop-filter: blur(8px);
+        padding: 0;
+    }
+
+        .carousel-nav-btn:hover {
+            background: rgba(200, 200, 200, 0.1);
+            border-color: rgba(200, 200, 200, 0.4);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+            transform: scale(1.1);
+        }
+
+    .game-card-wrapper {
+        flex: 0 0 calc(33.333% - 1rem);
+        scroll-snap-align: start;
+        display: flex;
+        flex-direction: column;
+    }
+
     .game-card {
         background: var(--color-bg-card);
         border: 1px solid var(--color-border);
         border-radius: 16px;
         overflow: hidden;
         transition: all 0.3s ease;
-        height: 100%;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
     }
 
         .game-card:hover {
@@ -330,17 +387,21 @@
         width: 100%;
         height: 200px;
         overflow: hidden;
+        flex-shrink: 0;
     }
 
         .game-card-img img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            object-position: center;
+            image-rendering: high-quality;
+            image-rendering: -webkit-optimize-contrast;
             transition: transform 0.4s ease;
         }
 
     .game-card:hover .game-card-img img {
-        transform: scale(1.05);
+        transform: scale(1.01);
     }
 
     .game-card-img-placeholder {
@@ -353,6 +414,9 @@
 
     .game-card-body {
         padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
     }
 
     .game-card-meta {
@@ -444,6 +508,25 @@
         .hero-title {
             letter-spacing: -1px;
         }
+
+        .game-card-wrapper {
+            flex: 0 0 calc(50% - 0.75rem);
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .game-card-wrapper {
+            flex: 0 0 100%;
+        }
+
+        .games-carousel-container {
+            padding: 0 2.5rem;
+        }
+
+        .carousel-nav-btn {
+            width: 36px;
+            height: 36px;
+        }
     }
 </style>
 
@@ -467,8 +550,8 @@
                     We push the boundaries of digital artistry. Experience the future of gaming with cutting-edge technology and immersive gameplay.
                 </p>
                 <div class="d-flex flex-wrap gap-3">
-                    <a asp-controller="Home" asp-action="Games" class="btn-hero-primary">
-                        Explore Games
+                    <a asp-controller="Asset" asp-action="Index" class="btn-hero-primary">
+                        Explore Assets
                         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path d="M5 12h14M12 5l7 7-7 7" />
                         </svg>
@@ -511,89 +594,168 @@
                 <h2 class="section-title">Our Projects</h2>
                 <p class="section-subtitle">Explore the worlds we are building</p>
             </div>
-            <div class="row g-4">
-                @foreach (var game in Model)
+
+            <div class="games-carousel-container position-relative">
+                @if (isCarousel)
                 {
-                    <div class="col-12 col-md-6 col-lg-4">
-                        @if (!string.IsNullOrEmpty(game.ExternalLink))
-                        {
-                            <a href="@game.ExternalLink" target="_blank" rel="noopener noreferrer" class="game-card" style="text-decoration:none; display:block;">
-                                @if (!string.IsNullOrEmpty(game.ImagePath))
-                                {
-                                    <div class="game-card-img">
-                                        <img src="@game.ImagePath" alt="@game.Title" />
-                                    </div>
-                                }
-                                else
-                                {
-                                    <div class="game-card-img game-card-img-placeholder">
-                                        <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
-                                            <rect x="3" y="3" width="18" height="18" rx="2" />
-                                            <circle cx="8.5" cy="8.5" r="1.5" />
-                                            <path d="M21 15l-5-5L5 21" />
-                                        </svg>
-                                    </div>
-                                }
-                                <div class="game-card-body">
-                                    <div class="game-card-meta">
-                                        @if (!string.IsNullOrEmpty(game.Genre))
-                                        {
-                                            <span class="game-tag">@game.Genre</span>
-                                        }
-                                        @if (!string.IsNullOrEmpty(game.Status))
-                                        {
-                                            <span class="game-status">@game.Status</span>
-                                        }
-                                    </div>
-                                    <h3 class="game-card-title">@game.Title</h3>
-                                    @if (!string.IsNullOrEmpty(game.Description))
-                                    {
-                                        <p class="game-card-desc">@game.Description</p>
-                                    }
-                                </div>
-                            </a>
-                        }
-                        else
-                        {
-                            <div class="game-card">
-                                @if (!string.IsNullOrEmpty(game.ImagePath))
-                                {
-                                    <div class="game-card-img">
-                                        <img src="@game.ImagePath" alt="@game.Title" />
-                                    </div>
-                                }
-                                else
-                                {
-                                    <div class="game-card-img game-card-img-placeholder">
-                                        <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
-                                            <rect x="3" y="3" width="18" height="18" rx="2" />
-                                            <circle cx="8.5" cy="8.5" r="1.5" />
-                                            <path d="M21 15l-5-5L5 21" />
-                                        </svg>
-                                    </div>
-                                }
-                                <div class="game-card-body">
-                                    <div class="game-card-meta">
-                                        @if (!string.IsNullOrEmpty(game.Genre))
-                                        {
-                                            <span class="game-tag">@game.Genre</span>
-                                        }
-                                        @if (!string.IsNullOrEmpty(game.Status))
-                                        {
-                                            <span class="game-status">@game.Status</span>
-                                        }
-                                    </div>
-                                    <h3 class="game-card-title">@game.Title</h3>
-                                    @if (!string.IsNullOrEmpty(game.Description))
-                                    {
-                                        <p class="game-card-desc">@game.Description</p>
-                                    }
-                                </div>
-                            </div>
-                        }
-                    </div>
+                    <button class="btn rounded-circle position-absolute top-50 start-0 translate-middle-y d-flex align-items-center justify-content-center z-3 carousel-nav-btn shadow" id="btnScrollLeft">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <button class="btn rounded-circle position-absolute top-50 end-0 translate-middle-y d-flex align-items-center justify-content-center z-3 carousel-nav-btn shadow" id="btnScrollRight">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
                 }
+
+                <div class="@(isCarousel ? "games-carousel" : "games-grid")" id="@(isCarousel ? "projectCarousel" : "")">
+                    @foreach (var game in Model)
+                    {
+                        <div class="game-card-wrapper">
+                            @if (!string.IsNullOrEmpty(game.ExternalLink))
+                            {
+                                <a href="@game.ExternalLink" target="_blank" rel="noopener noreferrer" class="game-card" style="text-decoration:none;">
+                                    @if (!string.IsNullOrEmpty(game.ImagePath))
+                                    {
+                                        <div class="game-card-img">
+                                            <img src="@game.ImagePath" alt="@game.Title" />
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="game-card-img game-card-img-placeholder">
+                                            <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+                                                <rect x="3" y="3" width="18" height="18" rx="2" />
+                                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                                <path d="M21 15l-5-5L5 21" />
+                                            </svg>
+                                        </div>
+                                    }
+                                    <div class="game-card-body">
+                                        <div class="game-card-meta">
+                                            @if (!string.IsNullOrEmpty(game.Genre))
+                                            {
+                                                <span class="game-tag">@game.Genre</span>
+                                            }
+                                            @if (!string.IsNullOrEmpty(game.Status))
+                                            {
+                                                <span class="game-status">@game.Status</span>
+                                            }
+                                        </div>
+                                        <h3 class="game-card-title">@game.Title</h3>
+                                        @if (!string.IsNullOrEmpty(game.Description))
+                                        {
+                                            <p class="game-card-desc">@game.Description</p>
+                                        }
+                                    </div>
+                                </a>
+                            }
+                            else
+                            {
+                                <div class="game-card">
+                                    @if (!string.IsNullOrEmpty(game.ImagePath))
+                                    {
+                                        <div class="game-card-img">
+                                            <img src="@game.ImagePath" alt="@game.Title" />
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="game-card-img game-card-img-placeholder">
+                                            <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+                                                <rect x="3" y="3" width="18" height="18" rx="2" />
+                                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                                <path d="M21 15l-5-5L5 21" />
+                                            </svg>
+                                        </div>
+                                    }
+                                    <div class="game-card-body">
+                                        <div class="game-card-meta">
+                                            @if (!string.IsNullOrEmpty(game.Genre))
+                                            {
+                                                <span class="game-tag">@game.Genre</span>
+                                            }
+                                            @if (!string.IsNullOrEmpty(game.Status))
+                                            {
+                                                <span class="game-status">@game.Status</span>
+                                            }
+                                        </div>
+                                        <h3 class="game-card-title">@game.Title</h3>
+                                        @if (!string.IsNullOrEmpty(game.Description))
+                                        {
+                                            <p class="game-card-desc">@game.Description</p>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
             </div>
         </div>
     </section>
+}
+
+@if (isCarousel)
+{
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const carousel = document.getElementById('projectCarousel');
+            const btnLeft = document.getElementById('btnScrollLeft');
+            const btnRight = document.getElementById('btnScrollRight');
+
+            if (!carousel) return;
+
+            let isHovered = false;
+
+            carousel.addEventListener('mouseenter', () => isHovered = true);
+            carousel.addEventListener('mouseleave', () => isHovered = false);
+            carousel.addEventListener('touchstart', () => isHovered = true);
+            carousel.addEventListener('touchend', () => {
+                setTimeout(() => isHovered = false, 2000);
+            });
+
+            if (btnLeft && btnRight) {
+                btnLeft.addEventListener('mouseenter', () => isHovered = true);
+                btnLeft.addEventListener('mouseleave', () => isHovered = false);
+                btnRight.addEventListener('mouseenter', () => isHovered = true);
+                btnRight.addEventListener('mouseleave', () => isHovered = false);
+
+                btnLeft.addEventListener('click', () => {
+                    const firstCard = carousel.querySelector('.game-card-wrapper');
+                    if (!firstCard) return;
+                    const itemWidth = firstCard.offsetWidth + 24;
+                    carousel.scrollBy({ left: -itemWidth, behavior: 'smooth' });
+                });
+
+                btnRight.addEventListener('click', () => {
+                    const firstCard = carousel.querySelector('.game-card-wrapper');
+                    if (!firstCard) return;
+                    const itemWidth = firstCard.offsetWidth + 24;
+                    carousel.scrollBy({ left: itemWidth, behavior: 'smooth' });
+                });
+            }
+
+            setInterval(() => {
+                if (isHovered) return;
+
+                const firstCard = carousel.querySelector('.game-card-wrapper');
+                if (!firstCard) return;
+
+                const scrollWidth = carousel.scrollWidth;
+                const clientWidth = carousel.clientWidth;
+                const maxScroll = scrollWidth - clientWidth;
+
+                const itemWidth = firstCard.offsetWidth + 24;
+
+                if (carousel.scrollLeft >= maxScroll - 10) {
+                    carousel.scrollTo({ left: 0, behavior: 'smooth' });
+                } else {
+                    carousel.scrollBy({ left: itemWidth, behavior: 'smooth' });
+                }
+            }, 5000);
+        });
+    </script>
 }

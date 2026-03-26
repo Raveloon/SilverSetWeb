@@ -1,4 +1,5 @@
 ﻿@model SilverSet.Models.ViewModels.RegisterViewModel
+@inject IConfiguration Configuration
 
 @{
     ViewData["Title"] = "Create Account";
@@ -13,6 +14,7 @@
     <title>@ViewData["Title"] - SilverSet Studios</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 
     <style>
         body {
@@ -60,7 +62,6 @@
                 color: var(--color-text-muted);
             }
 
-        /* Şifre alanı wrapper */
         .password-wrapper {
             position: relative;
             display: flex;
@@ -113,7 +114,6 @@
             border-color: var(--color-accent);
         }
 
-        /* Şifre güç göstergesi */
         .strength-bar {
             height: 3px;
             border-radius: 2px;
@@ -221,9 +221,11 @@
         </div>
 
         <form asp-action="Register" asp-controller="Account" method="post" novalidate>
+            @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="text-danger small mb-3 text-center"></div>
 
-            <!-- Kullanıcı Adı -->
+            <input type="text" name="TerminalAccessCode" style="display:none !important; position:absolute; left:-9999px;" tabindex="-1" autocomplete="off" />
+
             <div class="mb-3">
                 <label asp-for="UserName" class="form-label text-accent fw-medium">USERNAME</label>
                 <input asp-for="UserName"
@@ -232,7 +234,6 @@
                 <span asp-validation-for="UserName" class="text-danger small"></span>
             </div>
 
-            <!-- E-posta -->
             <div class="mb-3">
                 <label asp-for="Email" class="form-label text-accent fw-medium">E-MAIL</label>
                 <input asp-for="Email"
@@ -241,7 +242,6 @@
                 <span asp-validation-for="Email" class="text-danger small"></span>
             </div>
 
-            <!-- Şifre -->
             <div class="mb-3">
                 <label asp-for="Password" class="form-label text-accent fw-medium">PASSWORD</label>
                 <div class="password-wrapper">
@@ -254,13 +254,11 @@
                            readonly
                            onfocus="this.removeAttribute('readonly')" />
                     <button type="button" class="btn-eye" onclick="togglePassword('passwordInput', this)" tabindex="-1">
-                        <!-- Göz ikonu (kapalı) -->
                         <svg id="icon-pw-closed" viewBox="0 0 24 24">
                             <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
                             <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
                             <line x1="1" y1="1" x2="23" y2="23" />
                         </svg>
-                        <!-- Göz ikonu (açık) - başta gizli -->
                         <svg id="icon-pw-open" viewBox="0 0 24 24" style="display:none;">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                             <circle cx="12" cy="12" r="3" />
@@ -274,7 +272,6 @@
                 <span asp-validation-for="Password" class="text-danger small"></span>
             </div>
 
-            <!-- Şifre Tekrar -->
             <div class="mb-4">
                 <label asp-for="ConfirmPassword" class="form-label text-accent fw-medium">CONFIRM PASSWORD</label>
                 <div class="password-wrapper">
@@ -299,6 +296,10 @@
                     </button>
                 </div>
                 <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-4 d-flex justify-content-center">
+                <div class="cf-turnstile" data-sitekey="@Configuration["CloudflareTurnstile:SiteKey"]" data-theme="dark"></div>
             </div>
 
             <button type="submit" class="btn btn-silver w-100 py-3">INITIALIZE REGISTRATION</button>

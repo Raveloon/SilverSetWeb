@@ -1,4 +1,5 @@
 ﻿@model SilverSet.Models.ViewModels.ContactViewModel
+@inject IConfiguration Configuration
 @{
     ViewData["Title"] = "Contact & Support";
 }
@@ -123,6 +124,7 @@
         text-align: center;
         width: 100%;
     }
+
     .info-content a {
         color: #fff;
         text-decoration: none;
@@ -447,6 +449,9 @@
                 else
                 {
                     <form asp-controller="Contact" asp-action="CreateTicket" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="text" name="TerminalAccessCode" style="display:none !important; position:absolute; left:-9999px;" tabindex="-1" autocomplete="off" />
+
                         <div>
                             <label class="form-label text-muted" style="font-size: 0.65rem; font-weight: 800; text-transform:uppercase; letter-spacing:1.5px;">Subject Line</label>
                             <input type="text" name="subject" class="form-control-custom" placeholder="Briefly describe the issue..." required>
@@ -455,6 +460,11 @@
                             <label class="form-label text-muted" style="font-size: 0.65rem; font-weight: 800; text-transform:uppercase; letter-spacing:1.5px;">Initial Transmission</label>
                             <textarea name="message" class="form-control-custom" rows="5" placeholder="Provide detailed information here..." required></textarea>
                         </div>
+
+                        <div class="mb-4 d-flex justify-content-center">
+                            <div class="cf-turnstile" data-sitekey="@Configuration["CloudflareTurnstile:SiteKey"]" data-theme="dark"></div>
+                        </div>
+
                         <button type="submit" class="btn-submit-ticket" aria-label="Initialize Ticket">INITIALIZE TICKET</button>
                     </form>
 
@@ -478,6 +488,7 @@
 </main>
 
 @section Scripts {
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
 
     @if (Model.ActiveTicket != null)

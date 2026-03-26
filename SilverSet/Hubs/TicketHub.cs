@@ -41,6 +41,8 @@ public class TicketHub : Hub
 
     public async Task SendMessage(int ticketId, string message)
     {
+        if (string.IsNullOrWhiteSpace(message) || message.Length > 2000) return;
+
         var currentUserIdString = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!int.TryParse(currentUserIdString, out int currentUserId)) return;
 
@@ -49,7 +51,7 @@ public class TicketHub : Hub
         {
             if ((DateTime.UtcNow - lastMessageTime).TotalSeconds < 1)
             {
-                await Clients.Caller.SendAsync("ReceiveMessage", "[SİSTEM]: Lütfen mesaj gönderirken biraz bekleyin.", true);
+                await Clients.Caller.SendAsync("ReceiveMessage", "[SYSTEM]: Excessive transmission detected. Please wait.", true);
                 return;
             }
         }
@@ -61,7 +63,7 @@ public class TicketHub : Hub
         var ticket = await _context.Tickets
             .FirstOrDefaultAsync(t => t.Id == ticketId && t.IsOpen && (t.UserId == currentUserId || isAdmin));
 
-        if (ticket != null && !string.IsNullOrWhiteSpace(message))
+        if (ticket != null)
         {
             var ticketMessage = new TicketMessage
             {

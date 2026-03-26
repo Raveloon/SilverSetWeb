@@ -5,6 +5,8 @@ using SilverSet.Models.Entities;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 using SilverSet.Hubs;
+using SilverSet.Filters;
+using SilverSet.Services; 
 
 namespace SilverSet;
 
@@ -17,6 +19,7 @@ public class Program
         builder.Services.AddDbContext<SilverSetContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+        
         builder.Services.AddRateLimiter(options =>
         {
             options.AddFixedWindowLimiter("Strict", opt =>
@@ -29,11 +32,11 @@ public class Program
 
         builder.Services.AddIdentity<AppUser, AppRole>(options =>
         {
-            options.Password.RequiredLength = 6;
-            options.Password.RequireDigit = false;
+            options.Password.RequiredLength = 8; 
+            options.Password.RequireDigit = true;
             options.Password.RequireNonAlphanumeric = false;
-            options.Password.RequireUppercase = false;
-            options.Password.RequireLowercase = false;
+            options.Password.RequireUppercase = true;
+            options.Password.RequireLowercase = true;
             options.User.RequireUniqueEmail = true;
 
             options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
@@ -41,7 +44,14 @@ public class Program
             options.Lockout.AllowedForNewUsers = true;
         }).AddEntityFrameworkStores<SilverSetContext>().AddDefaultTokenProviders();
 
-        builder.Services.AddControllersWithViews();
+        
+        builder.Services.AddHttpClient<TurnstileService>();
+
+        builder.Services.AddControllersWithViews(options =>
+        {
+            options.Filters.Add<BannedUserFilter>();
+        });
+
         builder.Services.AddSignalR();
 
         builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
@@ -84,9 +94,11 @@ public class Program
         });
 
         app.UseHttpsRedirection();
+        app.UseStaticFiles(); 
         app.UseRouting();
         app.UseAuthentication();
         app.UseAuthorization();
+
         app.MapStaticAssets();
 
         app.MapControllerRoute(
@@ -98,7 +110,8 @@ public class Program
             pattern: "{controller=Home}/{action=Index}/{id?}")
             .WithStaticAssets();
 
-        app.MapHub<TicketHub>("/ticketHub");
+        
+        app.MapHub<TicketHub>("/ticketHub").RequireRateLimiting("Strict");
 
         using (var scope = app.Services.CreateScope())
         {
@@ -108,30 +121,48 @@ public class Program
                 var userManager = services.GetRequiredService<UserManager<AppUser>>();
                 var roleManager = services.GetRequiredService<RoleManager<AppRole>>();
                 var configuration = services.GetRequiredService<IConfiguration>();
+                var logger = services.GetRequiredService<ILogger<Program>>();
 
-                if (!await roleManager.RoleExistsAsync("Admin"))
+                string? adminRole = configuration["AdminSetup:AdminRole"];
+                string? adminName = configuration["AdminSetup:AdminName"];
+                string? adminPassword = configuration["AdminSetup:Password"];
+                string? adminEmail = configuration["AdminSetup:AdminEmail"];
+
+                if (!string.IsNullOrEmpty(adminRole) && !await roleManager.RoleExistsAsync(adminRole))
                 {
-                    await roleManager.CreateAsync(new AppRole { Name = "Admin" });
+                    await roleManager.CreateAsync(new AppRole { Name = adminRole });
                 }
 
-                string adminName = configuration["AdminSetup:AdminName"]!;
-                string adminPassword = configuration["AdminSetup:Password"]!;
-
-                var user = await userManager.FindByNameAsync(adminName);
-                if (user == null)
+                if (!string.IsNullOrEmpty(adminName) && !string.IsNullOrEmpty(adminPassword) && !string.IsNullOrEmpty(adminEmail))
                 {
-                    var adminUser = new AppUser
+                    var user = await userManager.FindByNameAsync(adminName);
+                    if (user == null)
                     {
-                        UserName = adminName,
-                        Email = "admin@silverset.com",
-                        EmailConfirmed = true,
-                        CreatedAt = DateTime.UtcNow
-                    };
-                    var result = await userManager.CreateAsync(adminUser, adminPassword);
-                    if (result.Succeeded) await userManager.AddToRoleAsync(adminUser, "Admin");
+                        var adminUser = new AppUser
+                        {
+                            UserName = adminName,
+                            Email = adminEmail,
+                            EmailConfirmed = true,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        var result = await userManager.CreateAsync(adminUser, adminPassword);
+
+                        if (result.Succeeded && !string.IsNullOrEmpty(adminRole))
+                        {
+                            await userManager.AddToRoleAsync(adminUser, adminRole);
+                        }
+                        else if (!result.Succeeded)
+                        {
+                            logger.LogError("Admin user creation failed: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
+                        }
+                    }
                 }
             }
-            catch (Exception) { }
+            catch (Exception ex)
+            {
+                var logger = services.GetRequiredService<ILogger<Program>>();
+                logger.LogError(ex, "An error occurred while seeding the database.");
+            }
         }
 
         await app.RunAsync();
