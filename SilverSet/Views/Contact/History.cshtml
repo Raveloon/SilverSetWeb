@@ -1,0 +1,285 @@
+﻿@model IEnumerable<SilverSet.Models.Entities.Ticket>
+@{
+    ViewData["Title"] = "Operation Logs";
+}
+
+<style>
+    .history-wrapper {
+        padding: 4rem 0;
+        min-height: 80vh;
+    }
+
+    .history-header {
+        margin-bottom: 3rem;
+    }
+
+    .history-title {
+        font-size: 2.5rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        color: #fff;
+    }
+
+    .history-subtitle {
+        color: #888;
+        letter-spacing: 1.5px;
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+        text-transform: uppercase;
+    }
+
+    .terminal-card {
+        background: rgba(15, 15, 15, 0.9);
+        border: 1px solid #222;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .pagination-terminal {
+        display: flex;
+        gap: 0.5rem;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+        .pagination-terminal .page-link {
+            background: transparent;
+            color: #888;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+            font-weight: 800;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .pagination-terminal .page-item.active .page-link {
+            background: #fff;
+            color: #000;
+            border-color: #fff;
+        }
+
+        .pagination-terminal .page-link:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-color: #555;
+        }
+
+    .table-terminal {
+        width: 100%;
+        color: #999;
+        border-collapse: separate;
+        border-spacing: 0 10px;
+    }
+
+        .table-terminal thead th {
+            color: #555;
+            font-size: 0.65rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 0.5rem 1rem;
+            border: none;
+        }
+
+        .table-terminal tbody tr {
+            background: rgba(20, 20, 20, 0.6);
+            transition: transform 0.2s, background 0.2s;
+        }
+
+            .table-terminal tbody tr:hover {
+                background: rgba(30, 30, 30, 0.8);
+                transform: translateY(-2px);
+            }
+
+        .table-terminal td {
+            padding: 1.2rem 1rem;
+            border-top: 1px solid #222;
+            border-bottom: 1px solid #222;
+            vertical-align: middle;
+        }
+
+            .table-terminal td:first-child {
+                border-left: 1px solid #222;
+                border-top-left-radius: 4px;
+                border-bottom-left-radius: 4px;
+            }
+
+            .table-terminal td:last-child {
+                border-right: 1px solid #222;
+                border-top-right-radius: 4px;
+                border-bottom-right-radius: 4px;
+            }
+
+    .badge-status {
+        padding: 0.4rem 0.8rem;
+        border-radius: 4px;
+        font-size: 0.6rem;
+        font-weight: 900;
+        letter-spacing: 1px;
+        display: inline-block;
+        white-space: nowrap;
+    }
+
+    .badge-open {
+        background: #fff;
+        color: #000;
+    }
+
+    .badge-closed {
+        background: transparent;
+        color: #555;
+        border: 1px solid #333;
+    }
+
+    .btn-view {
+        background: transparent;
+        color: #fff;
+        border: 1px solid #444;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        font-size: 0.65rem;
+        font-weight: 800;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+        .btn-view:hover {
+            border-color: #fff;
+            color: #fff;
+        }
+
+    .btn-return {
+        background: transparent;
+        color: #888;
+        border: none;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-decoration: none;
+        transition: color 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+    }
+
+        .btn-return:hover {
+            color: #fff;
+        }
+
+    @@media (max-width: 768px) {
+        .table-terminal thead {
+            display: none;
+        }
+
+        .table-terminal td {
+            display: block;
+            text-align: right;
+            padding: 0.75rem 1rem;
+            border: none;
+        }
+
+            .table-terminal td::before {
+                content: attr(data-label);
+                float: left;
+                font-weight: 800;
+                color: #555;
+                font-size: 0.65rem;
+                text-transform: uppercase;
+            }
+
+            .table-terminal td:last-child {
+                border-bottom: 1px solid #333;
+                text-align: center;
+                padding: 1.5rem 1rem;
+            }
+    }
+</style>
+
+<main class="container history-wrapper">
+    <a asp-action="Index" class="btn-return">
+        <i class="bi bi-arrow-left"></i> Return to Comms
+    </a>
+
+    <header class="history-header">
+        <h1 class="history-title">Operation Logs</h1>
+        <p class="history-subtitle">Encrypted history of your past transmissions</p>
+    </header>
+
+    <div class="terminal-card">
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-journal-x" style="font-size: 3rem; color: #333; display: block; margin-bottom: 1rem;"></i>
+                <h4 style="color: #fff; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; font-size: 1rem;">No Logs Found</h4>
+                <p style="color: #666; font-size: 0.85rem;">There are no archived transmissions in your secure file.</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive" style="overflow: visible;">
+                <table class="table-terminal">
+                    <thead>
+                        <tr>
+                            <th>Log ID</th>
+                            <th>Subject</th>
+                            <th>Initiated</th>
+                            <th>Status</th>
+                            <th class="text-end">Command</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr style="@(item.IsOpen ? "" : "opacity: 0.6;")">
+                                <td data-label="Log ID" class="fw-bold" style="color: #fff;">#@item.Id</td>
+                                <td data-label="Subject" style="color: #ccc;">@item.Subject</td>
+                                <td data-label="Initiated" class="small">@item.CreatedAt.ToLocalTime().ToString("dd.MM.yy HH:mm")</td>
+                                <td data-label="Status">
+                                    @if (item.IsOpen)
+                                    {
+                                        <span class="badge-status badge-open">ACTIVE</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge-status badge-closed">ARCHIVED</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn-view">
+                                        <i class="bi bi-eye"></i> Access Log
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (ViewBag.TotalPages > 1)
+            {
+                <nav class="d-flex justify-content-center mt-4 mb-2">
+                    <ul class="pagination-terminal">
+                        @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                                <a class="page-link" href="?page=@i">@i</a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            }
+        }
+    </div>
+</main>

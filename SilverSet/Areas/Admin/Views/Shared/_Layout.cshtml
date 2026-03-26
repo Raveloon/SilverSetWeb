@@ -227,7 +227,11 @@
                class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Users" ? "active" : "")">
                 <i class="bi bi-people"></i> Users
             </a>
-
+            <div class="nav-section-label">SUPPORT</div>
+            <a asp-area="Admin" asp-controller="Tickets" asp-action="Index"
+               class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tickets" ? "active" : "")">
+                <i class="bi bi-ticket-detailed"></i> Support Tickets
+            </a>
          <div class="nav-section-label">Security</div>
         <a asp-area="Admin" asp-controller="Logs" asp-action="Index"
                class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Logs" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")">

@@ -1,0 +1,173 @@
+﻿@model SilverSet.Models.Entities.Ticket
+@{
+    ViewData["Title"] = "Archived Transmission";
+}
+
+<style>
+    .history-wrapper {
+        padding: 4rem 0;
+        min-height: 80vh;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+        background: rgba(15, 15, 15, 0.9);
+        border-radius: 8px;
+        border: 1px solid #333;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .chat-header {
+        padding: 1.5rem;
+        background: transparent;
+        border-bottom: 1px solid #333;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .chat-messages {
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.2rem;
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 4px;
+        }
+
+    .msg-bubble {
+        max-width: 80%;
+        padding: 0.85rem 1.2rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        line-height: 1.6;
+        word-wrap: break-word;
+    }
+
+    .msg-user {
+        align-self: flex-end;
+        background: #222;
+        border: 1px solid #444;
+        color: #eee;
+    }
+
+    .msg-admin {
+        align-self: flex-start;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid #fff;
+        color: #fff;
+    }
+
+    .msg-system {
+        align-self: center;
+        color: #888;
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        padding: 0.8rem 2rem;
+        border-top: 1px dashed #333;
+        border-bottom: 1px dashed #333;
+        margin: 1.5rem 0;
+        text-align: center;
+        width: 80%;
+    }
+
+    .archived-banner {
+        background: rgba(248, 113, 113, 0.05);
+        border-top: 1px solid rgba(248, 113, 113, 0.2);
+        color: #f87171;
+        padding: 1.2rem;
+        text-align: center;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: 0.8rem;
+    }
+
+    .btn-return {
+        background: transparent;
+        color: #888;
+        border: none;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-decoration: none;
+        transition: color 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 2rem;
+        justify-content: center;
+        width: 100%;
+    }
+
+        .btn-return:hover {
+            color: #fff;
+        }
+</style>
+
+<main class="container history-wrapper">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h2 style="color: #fff; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; margin: 0;">LOG #@Model.Id</h2>
+        <p style="color: #666; font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; margin-top: 0.5rem;">Accessing encrypted archives</p>
+    </div>
+
+    <div class="chat-container">
+        <header class="chat-header">
+            <div style="color:white; font-weight:800; font-size:1.1rem; letter-spacing: 1px; text-transform: uppercase;">
+                @Model.Subject
+            </div>
+            <div style="color: #666; font-size: 0.7rem; font-weight: 800; letter-spacing: 1.5px;">
+                INITIATED: @Model.CreatedAt.ToLocalTime().ToString("dd.MM.yy HH:mm")
+            </div>
+        </header>
+
+        <div class="chat-messages">
+            @foreach (var msg in Model.Messages.OrderBy(m => m.SentAt))
+            {
+                if (msg.Content.StartsWith("[CLOSED]") || msg.Content.StartsWith("[RE-OPENED]"))
+                {
+                    <div class="msg-system">
+                        @msg.Content
+                    </div>
+                }
+                else
+                {
+                    <div class="msg-bubble @(msg.IsAdminReply ? "msg-admin" : "msg-user")">
+                        @msg.Content
+                    </div>
+                }
+            }
+        </div>
+
+        @if (!Model.IsOpen)
+        {
+            <div class="archived-banner">
+                <i class="bi bi-lock-fill me-2"></i> THIS TRANSMISSION HAS BEEN ARCHIVED. READ-ONLY MODE ACTIVE.
+            </div>
+        }
+    </div>
+
+    <a asp-action="History" class="btn-return">
+        <i class="bi bi-arrow-left"></i> RETURN TO HISTORY
+    </a>
+</main>

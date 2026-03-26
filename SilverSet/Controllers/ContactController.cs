@@ -1,8 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SilverSet.Data;
 using SilverSet.Models.Entities;
+using SilverSet.Models.ViewModels;
 using System.Security.Claims;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace SilverSet.Controllers;
 
@@ -18,52 +21,58 @@ public class ContactController : Controller
     [HttpGet]
     public async Task<IActionResult> Index()
     {
-        if (User.Identity != null && User.Identity.IsAuthenticated)
+        var model = new ContactViewModel();
+
+        if (User.Identity?.IsAuthenticated == true)
         {
-            // string'i int'e çeviriyoruz
-            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(userIdString, out int userId))
+            {
+                model.ActiveTicket = await _context.Tickets
+                    .Include(t => t.Messages)
+                    .FirstOrDefaultAsync(t => t.UserId == userId && t.IsOpen);
 
-            var activeTicket = await _context.Tickets
-                .Include(t => t.Messages)
-                .FirstOrDefaultAsync(t => t.UserId == userId && t.IsOpen);
-
-            var closedTicketsCount = await _context.Tickets
-                .CountAsync(t => t.UserId == userId && !t.IsOpen);
-
-            ViewBag.ActiveTicket = activeTicket;
-            ViewBag.ClosedTicketsCount = closedTicketsCount;
+                model.ClosedTicketsCount = await _context.Tickets
+                    .AsNoTracking()
+                    .CountAsync(t => t.UserId == userId && !t.IsOpen);
+            }
         }
 
-        return View();
+        return View(model);
     }
 
     [HttpPost]
+    [Authorize]
+    [EnableRateLimiting("Strict")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateTicket(string subject, string message)
     {
-        if (User.Identity == null || !User.Identity.IsAuthenticated)
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdString, out int userId))
+        {
             return RedirectToAction("Login", "Account");
+        }
 
-        // string'i int'e çeviriyoruz
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var hasActiveTicket = await _context.Tickets
+            .AsNoTracking()
+            .AnyAsync(t => t.UserId == userId && t.IsOpen);
 
-        var hasActiveTicket = await _context.Tickets.AnyAsync(t => t.UserId == userId && t.IsOpen);
         if (hasActiveTicket)
         {
-            TempData["Error"] = "You already have an active ticket.";
+            TempData["Error"] = "You already have an active support request.";
             return RedirectToAction(nameof(Index));
         }
 
         if (string.IsNullOrWhiteSpace(subject) || string.IsNullOrWhiteSpace(message))
         {
-            TempData["Error"] = "Subject and message are required.";
+            TempData["Error"] = "All fields are required to initialize a ticket.";
             return RedirectToAction(nameof(Index));
         }
 
         var ticket = new Ticket
         {
             UserId = userId,
-            Subject = subject,
+            Subject = subject.Trim(),
             IsOpen = true,
             CreatedAt = DateTime.UtcNow
         };
@@ -75,7 +84,7 @@ public class ContactController : Controller
         {
             TicketId = ticket.Id,
             SenderId = userId,
-            Content = message,
+            Content = message.Trim(),
             IsAdminReply = false,
             SentAt = DateTime.UtcNow
         };
@@ -83,7 +92,46 @@ public class ContactController : Controller
         _context.TicketMessages.Add(firstMessage);
         await _context.SaveChangesAsync();
 
-        TempData["Success"] = "Ticket initialized successfully. Support channel is now open.";
+        TempData["Success"] = "Secure line established. Our team will respond shortly.";
         return RedirectToAction(nameof(Index));
+    }
+    [Authorize]
+    public async Task<IActionResult> History(int page = 1)
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdString, out int userId)) return RedirectToAction("Login", "Account");
+
+        int pageSize = 10;
+        var query = _context.Tickets.Where(t => t.UserId == userId);
+
+        int totalItems = await query.CountAsync();
+        int totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+        var tickets = await query
+            .OrderByDescending(t => t.IsOpen)
+            .ThenByDescending(t => t.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        ViewBag.CurrentPage = page;
+        ViewBag.TotalPages = totalPages;
+
+        return View(tickets);
+    }
+
+    [Authorize]
+    public async Task<IActionResult> Details(int id)
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdString, out int userId)) return RedirectToAction("Login", "Account");
+
+        var ticket = await _context.Tickets
+            .Include(t => t.Messages)
+            .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
+
+        if (ticket == null) return NotFound();
+
+        return View(ticket);
     }
 }
