@@ -431,3 +431,5 @@ FodyWeavers.xsd
 
 # wwwroot third-party libraries
 wwwroot/lib/
+
+wwwroot/data/blacklist.txt

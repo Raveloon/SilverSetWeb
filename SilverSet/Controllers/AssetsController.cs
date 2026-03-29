@@ -13,13 +13,24 @@ public class AssetsController : Controller
         _context = context;
     }
 
-   
-    public async Task<IActionResult> Index()
+
+    public async Task<IActionResult> Index(int page = 1)
     {
-        var assets = await _context.Assets
-            .Where(a => a.IsVisible)
+        int pageSize = 9;
+        var query = _context.Assets.AsNoTracking().Where(a => a.IsVisible);
+
+        int totalItems = await query.CountAsync();
+        int totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+        var assets = await query
             .OrderBy(a => a.DisplayOrder)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
+
+        ViewBag.CurrentPage = page;
+        ViewBag.TotalPages = totalPages;
+
         return View(assets);
     }
 }

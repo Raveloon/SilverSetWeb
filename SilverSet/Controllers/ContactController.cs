@@ -137,6 +137,20 @@ public class ContactController : Controller
     }
 
     [Authorize]
+    public async Task<IActionResult> MyTickets()
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdString, out int userId)) return RedirectToAction("Login", "Account");
+
+        var userTickets = await _context.Tickets
+            .Where(t => t.UserId == userId)
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync();
+
+        return View(userTickets);
+    }
+
+    [Authorize]
     public async Task<IActionResult> Details(int id)
     {
         var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 using SilverSet.Hubs;
 using SilverSet.Filters;
-using SilverSet.Services; 
+using SilverSet.Services;
 
 namespace SilverSet;
 
@@ -19,7 +19,6 @@ public class Program
         builder.Services.AddDbContext<SilverSetContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-        
         builder.Services.AddRateLimiter(options =>
         {
             options.AddFixedWindowLimiter("Strict", opt =>
@@ -32,7 +31,7 @@ public class Program
 
         builder.Services.AddIdentity<AppUser, AppRole>(options =>
         {
-            options.Password.RequiredLength = 8; 
+            options.Password.RequiredLength = 8;
             options.Password.RequireDigit = true;
             options.Password.RequireNonAlphanumeric = false;
             options.Password.RequireUppercase = true;
@@ -44,8 +43,10 @@ public class Program
             options.Lockout.AllowedForNewUsers = true;
         }).AddEntityFrameworkStores<SilverSetContext>().AddDefaultTokenProviders();
 
-        
         builder.Services.AddHttpClient<TurnstileService>();
+        builder.Services.AddMemoryCache();
+
+        builder.Services.AddScoped<ProfanityFilterService>();
 
         builder.Services.AddControllersWithViews(options =>
         {
@@ -64,7 +65,7 @@ public class Program
             options.LoginPath = "/Account/Login";
             options.AccessDeniedPath = "/Account/Login";
             options.Cookie.HttpOnly = true;
-            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always; 
             options.Cookie.SameSite = SameSiteMode.Strict;
             options.ExpireTimeSpan = TimeSpan.FromHours(2);
             options.SlidingExpiration = false;
@@ -76,9 +77,11 @@ public class Program
 
         if (!app.Environment.IsDevelopment())
         {
-            app.UseExceptionHandler("/Home/Error");
+            app.UseExceptionHandler("/Errors/500");
             app.UseHsts();
         }
+
+        app.UseStatusCodePagesWithReExecute("/Errors/{0}");
 
         app.Use(async (context, next) =>
         {
@@ -94,7 +97,7 @@ public class Program
         });
 
         app.UseHttpsRedirection();
-        app.UseStaticFiles(); 
+        app.UseStaticFiles();
         app.UseRouting();
         app.UseAuthentication();
         app.UseAuthorization();
@@ -110,7 +113,6 @@ public class Program
             pattern: "{controller=Home}/{action=Index}/{id?}")
             .WithStaticAssets();
 
-        
         app.MapHub<TicketHub>("/ticketHub").RequireRateLimiting("Strict");
 
         using (var scope = app.Services.CreateScope())
@@ -150,10 +152,6 @@ public class Program
                         if (result.Succeeded && !string.IsNullOrEmpty(adminRole))
                         {
                             await userManager.AddToRoleAsync(adminUser, adminRole);
-                        }
-                        else if (!result.Succeeded)
-                        {
-                            logger.LogError("Admin user creation failed: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
                         }
                     }
                 }

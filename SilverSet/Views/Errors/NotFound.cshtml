@@ -1,0 +1,107 @@
+﻿@{
+    Layout = null;
+    ViewData["Title"] = "404 - COORDINATE_UNAVAILABLE";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" />
+    <style>
+        :root {
+            --term-bg: #050505;
+            --term-text: #ffffff;
+            --term-accent: #888888;
+            --term-silver: #c0c0c0;
+        }
+
+        body {
+            background-color: var(--term-bg);
+            color: var(--term-text);
+            font-family: 'JetBrains Mono', monospace;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            background-image: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.02) 0%, transparent 80%);
+        }
+
+        .error-terminal {
+            max-width: 600px;
+            width: 90%;
+            padding: 3rem;
+            background: rgba(10, 10, 10, 0.9);
+            border: 1px solid #222;
+            border-radius: 4px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        }
+
+        .error-code {
+            color: white;
+            font-weight: 900;
+            letter-spacing: 5px;
+            margin-bottom: 2rem;
+            font-size: 1.2rem;
+        }
+
+        .command {
+            margin: 0.8rem 0;
+            font-size: 0.85rem;
+            color: var(--term-accent);
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 15px;
+            background: white;
+            animation: blink 1s infinite;
+            vertical-align: middle;
+        }
+
+        @@keyframes blink {
+            0%, 49% {
+                opacity: 1;
+            }
+
+            50%, 100% {
+                opacity: 0;
+            }
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 2.5rem;
+            color: var(--term-silver);
+            text-decoration: none;
+            border: 1px solid #333;
+            padding: 0.6rem 2rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+
+            .back-link:hover {
+                background: white;
+                color: black;
+                border-color: white;
+            }
+    </style>
+</head>
+<body>
+    <div class="error-terminal">
+        <div class="error-code">STATUS_404</div>
+        <div class="command">> REQUEST_PATH_SCAN...</div>
+        <div class="command">> SEARCHING_DATABASE...</div>
+        <div class="command">> RESULT: COORDINATES_NOT_FOUND</div>
+        <div class="command">> The requested sector is currently offline or does not exist.</div>
+        <div class="command">> SYSTEM_READY <span class="cursor"></span></div>
+        <a href="/" class="back-link">Return to Core</a>
+    </div>
+</body>
+</html>

@@ -1,4 +1,5 @@
-﻿@model IEnumerable<SilverSet.Models.Entities.Ticket>
+﻿@using SilverSet.Areas.Admin.Controllers
+@model AdminTicketDashboardViewModel
 @{
     ViewData["Title"] = "Support Operations";
 }
@@ -15,38 +16,6 @@
         padding: 1.25rem;
         margin-bottom: 2rem;
     }
-
-    .pagination-terminal {
-        display: flex;
-        gap: 0.5rem;
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-
-        .pagination-terminal .page-link {
-            background: transparent;
-            color: #888;
-            border: 1px solid #333;
-            border-radius: 4px;
-            padding: 0.5rem 1rem;
-            font-size: 0.75rem;
-            font-weight: 800;
-            transition: all 0.2s;
-            text-decoration: none;
-        }
-
-        .pagination-terminal .page-item.active .page-link {
-            background: #fff;
-            color: #000;
-            border-color: #fff;
-        }
-
-        .pagination-terminal .page-link:hover:not(.active) {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            border-color: #555;
-        }
 
     .filter-label {
         color: #666;
@@ -85,7 +54,6 @@
             letter-spacing: 2px;
             text-transform: uppercase;
             padding: 0.5rem 1rem;
-            border: none;
         }
 
         .table-terminal tbody tr {
@@ -105,26 +73,12 @@
             vertical-align: middle;
         }
 
-            .table-terminal td:first-child {
-                border-left: 1px solid #222;
-                border-top-left-radius: 6px;
-                border-bottom-left-radius: 6px;
-            }
-
-            .table-terminal td:last-child {
-                border-right: 1px solid #222;
-                border-top-right-radius: 6px;
-                border-bottom-right-radius: 6px;
-            }
-
     .badge-status {
         padding: 0.4rem 0.8rem;
         border-radius: 4px;
         font-size: 0.65rem;
         font-weight: 900;
         letter-spacing: 1px;
-        display: inline-block;
-        white-space: nowrap;
     }
 
     .badge-open {
@@ -138,6 +92,11 @@
         border: 1px solid #333;
     }
 
+    .badge-spam {
+        background: #ef4444;
+        color: #fff;
+    }
+
     .btn-action {
         text-transform: uppercase;
         letter-spacing: 1.5px;
@@ -145,7 +104,6 @@
         font-weight: 800;
         padding: 0.6rem 1.2rem;
         border-radius: 4px;
-        transition: all 0.2s;
         text-decoration: none;
         display: inline-flex;
         align-items: center;
@@ -155,91 +113,36 @@
     .btn-respond {
         background: #fff;
         color: #000;
-        border: 1px solid #fff;
     }
-
-        .btn-respond:hover {
-            background: #ccc;
-            border-color: #ccc;
-        }
 
     .btn-view {
         background: transparent;
-        color: #fff;
-        border: 1px solid #444;
-    }
-
-        .btn-view:hover {
-            border-color: #fff;
-        }
-
-    @@media (max-width: 768px) {
-        .admin-container {
-            padding: 0.75rem;
-        }
-
-        .table-terminal thead {
-            display: none;
-        }
-
-        .table-terminal td {
-            display: block;
-            text-align: right;
-            padding: 0.75rem 1rem;
-            border: none;
-        }
-
-            .table-terminal td::before {
-                content: attr(data-label);
-                float: left;
-                font-weight: 800;
-                color: #555;
-                font-size: 0.65rem;
-                text-transform: uppercase;
-            }
-
-            .table-terminal td:last-child {
-                border-bottom: 1px solid #333;
-                text-align: center;
-                padding: 1.5rem 1rem;
-            }
-
-        .btn-action {
-            width: 100%;
-            justify-content: center;
-        }
+        color: #888;
+        border: 1px solid #333;
     }
 </style>
 
 <div class="admin-container">
-    <div class="mb-4 d-flex justify-content-between align-items-center">
-        <h2 class="text-white fw-900 m-0" style="letter-spacing: 3px; font-size: 1.5rem;">SUPPORT <span style="color: #666;">OPS</span></h2>
-        <div class="text-accent-dim small fw-bold">ACTIVE CHANNELS: @Model.Count(x => x.IsOpen)</div>
-    </div>
-
-    <div class="terminal-card shadow-sm">
+    <div class="terminal-card">
         <form method="get" class="row g-3 align-items-end">
             <div class="col-md-3">
-                <label class="filter-label">Search Operative / Subject</label>
-                <input type="text" name="searchTerm" class="form-control terminal-input" placeholder="Keyword..." value="@ViewBag.SearchTerm">
+                <label class="filter-label">Search Operative</label>
+                <input type="text" name="searchTerm" class="form-control terminal-input" placeholder="Keyword..." value="@Model.SearchTerm">
             </div>
             <div class="col-md-2">
                 <label class="filter-label">Status</label>
                 <select name="status" class="form-select terminal-input">
                     <option value="">All Systems</option>
-                    <option value="open" selected="@(ViewBag.Status == "open")">Active Only</option>
-                    <option value="closed" selected="@(ViewBag.Status == "closed")">Archived Only</option>
+                    <option value="open" selected="@(Model.Status == "open")">Active</option>
+                    <option value="closed" selected="@(Model.Status == "closed")">Archived</option>
                 </select>
             </div>
             <div class="col-md-4">
                 <label class="filter-label">Time Window</label>
                 <select name="timeRange" class="form-select terminal-input">
                     <option value="">Full History</option>
-                    <option value="7days" selected="@(ViewBag.TimeRange == "7days")">Last 7 Days</option>
-                    <option value="15days" selected="@(ViewBag.TimeRange == "15days")">Last 15 Days</option>
-                    <option value="1month" selected="@(ViewBag.TimeRange == "1month")">Last 30 Days</option>
-                    <option value="3months" selected="@(ViewBag.TimeRange == "3months")">Last 3 Months</option>
-                    <option value="1year" selected="@(ViewBag.TimeRange == "1year")">Last Year</option>
+                    <option value="7days" selected="@(Model.TimeRange == "7days")">Last 7 Days</option>
+                    <option value="1month" selected="@(Model.TimeRange == "1month")">Last 30 Days</option>
                 </select>
             </div>
             <div class="col-md-3">
@@ -248,69 +151,106 @@
         </form>
     </div>
 
-    <div class="table-responsive" style="overflow: visible;">
-        <table class="table-terminal">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Operative</th>
-                    <th>Subject</th>
-                    <th>Timestamp</th>
-                    <th>Status</th>
-                    <th class="text-end">Command</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in Model)
-                {
-                    <tr style="@(item.IsOpen ? "" : "opacity: 0.5;")">
-                        <td data-label="ID" class="fw-bold" style="color: #fff;">#@item.Id</td>
-                        <td data-label="Operative">
-                            <div class="text-white fw-bold">@item.User?.UserName</div>
-                        </td>
-                        <td data-label="Subject">@item.Subject</td>
-                        <td data-label="Timestamp" class="small">@item.CreatedAt.ToLocalTime().ToString("dd.MM.yy HH:mm")</td>
-                        <td data-label="Status">
-                            @if (item.IsOpen)
-                            {
-                                <span class="badge-status badge-open">ACTIVE</span>
-                            }
-                            else
-                            {
-                                <span class="badge-status badge-closed">ARCHIVED</span>
-                            }
-                        </td>
-                        <td class="text-end">
-                            @if (item.IsOpen)
-                            {
-                                <a asp-action="Details" asp-route-id="@item.Id" class="btn-action btn-respond">
-                                    <i class="bi bi-terminal-fill"></i> Respond
-                                </a>
-                            }
-                            else
-                            {
-                                <a asp-action="Details" asp-route-id="@item.Id" class="btn-action btn-view">
-                                    <i class="bi bi-eye"></i> View Log
-                                </a>
-                            }
-                        </td>
+    <div id="active-tickets-section">
+        <div class="mb-4">
+            <h2 class="text-white fw-900 m-0" style="letter-spacing: 3px; font-size: 1.5rem;">SUPPORT <span style="color: #666;">OPS</span></h2>
+        </div>
+        <div class="table-responsive">
+            <table class="table-terminal">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Operative</th>
+                        <th>Subject</th>
+                        <th>Status</th>
+                        <th class="text-end">Command</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.ActiveTickets)
+                    {
+                        <tr>
+                            <td>#@item.Id</td>
+                            <td><div class="text-white fw-bold">@(item.User?.UserName ?? "Unknown")</div></td>
+                            <td>@item.Subject</td>
+                            <td>
+                                <span class="badge-status @(item.IsOpen ? "badge-open" : "badge-closed")">
+                                    @(item.IsOpen ? "ACTIVE" : "ARCHIVED")
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="btn-action @(item.IsOpen ? "btn-respond" : "btn-view")">
+                                    <i class="bi bi-terminal-fill"></i> @(item.IsOpen ? "RESPOND" : "VIEW")
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    @if (ViewBag.TotalPages > 1)
-    {
-        <nav class="d-flex justify-content-center mt-4 mb-3">
-            <ul class="pagination-terminal">
-                @for (int i = 1; i <= ViewBag.TotalPages; i++)
-                {
-                    <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
-                        <a class="page-link" href="?page=@i&searchTerm=@ViewBag.SearchTerm&status=@ViewBag.Status&timeRange=@ViewBag.TimeRange">@i</a>
-                    </li>
-                }
-            </ul>
-        </nav>
-    }
+    <div id="spam-tickets-section" style="display: none;">
+        <div class="mb-4">
+            <h2 class="text-white fw-900 m-0" style="letter-spacing: 3px; font-size: 1.5rem;">SPAM <span style="color: #ef4444;">QUARANTINE</span></h2>
+        </div>
+        <div class="table-responsive">
+            <table class="table-terminal">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Operative</th>
+                        <th>Subject</th>
+                        <th>Reason</th>
+                        <th class="text-end">Command</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.SpamTickets)
+                    {
+                        <tr style="opacity: 0.6;">
+                            <td>#@item.Id</td>
+                            <td>@item.User?.UserName</td>
+                            <td>@item.Subject</td>
+                            <td><span class="badge-status badge-spam">@item.SpamReason</span></td>
+                            <td class="text-end">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="btn-action btn-view">
+                                    <i class="bi bi-eye"></i> EXAMINE
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
+
+@section Scripts {
+    <script>
+        function showTickets(type) {
+            const activeSec = document.getElementById('active-tickets-section');
+            const spamSec = document.getElementById('spam-tickets-section');
+
+            if (type === 'spam') {
+                activeSec.style.display = 'none';
+                spamSec.style.display = 'block';
+            } else {
+                activeSec.style.display = 'block';
+                spamSec.style.display = 'none';
+            }
+        }
+
+        
+        document.addEventListener("DOMContentLoaded", function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const view = urlParams.get('view');
+
+            if (view === 'spam') {
+                showTickets('spam');
+            } else {
+                showTickets('active');
+            }
+        });
+    </script>
+}

@@ -1,0 +1,76 @@
+﻿@{
+    Layout = null;
+    ViewData["Title"] = "500 - CORE_FAILURE";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" />
+    <style>
+        :root {
+            --term-bg: #080000;
+            --term-text: #ff4444;
+            --term-silver: #e0e0e0;
+        }
+
+        body {
+            background-color: var(--term-bg);
+            color: var(--term-text);
+            font-family: 'JetBrains Mono', monospace;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+        }
+
+        .warning-box {
+            max-width: 600px;
+            width: 90%;
+            padding: 3rem;
+            border: 1px solid var(--term-text);
+            background: rgba(15, 0, 0, 0.9);
+        }
+
+        .title {
+            font-weight: 900;
+            letter-spacing: 3px;
+            margin-bottom: 1.5rem;
+        }
+
+        .msg {
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: #800;
+            margin-bottom: 2rem;
+        }
+
+        .btn-reboot {
+            display: inline-block;
+            color: white;
+            text-decoration: none;
+            border: 1px solid white;
+            padding: 0.6rem 2rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+            .btn-reboot:hover {
+                background: white;
+                color: black;
+            }
+    </style>
+</head>
+<body>
+    <div class="warning-box">
+        <div class="title">CORE_CRITICAL_ERROR_500</div>
+        <div class="msg">> An internal synchronization failure has been detected. Core systems are temporarily locked to prevent data corruption. Admin notification sent.</div>
+        <a href="/" class="btn-reboot">Reboot System</a>
+    </div>
+</body>
+</html>

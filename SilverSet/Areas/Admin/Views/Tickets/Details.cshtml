@@ -3,287 +3,296 @@
     ViewData["Title"] = "Support Operation";
 }
 
-<style>
-    .admin-chat-wrapper {
-        padding: 2rem;
-    }
-
-    .admin-chat-container {
-        height: 600px;
-        background: rgba(0, 0, 0, 0.3);
-        border: 1px solid #333;
-        border-radius: 12px;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
-
-    .msg-system {
-        align-self: center;
-        background: transparent;
-        color: #888;
-        font-size: 0.7rem;
-        font-weight: 800;
-        letter-spacing: 1.5px;
-        text-transform: uppercase;
-        padding: 0.8rem 2rem;
-        border-top: 1px dashed #333;
-        border-bottom: 1px dashed #333;
-        margin: 1.5rem 0;
-        text-align: center;
-        width: 80%;
-    }
-
-    .text-muted {
-        color: #aaa !important;
-    }
-
-    .form-control::placeholder {
-        color: #666 !important;
-        opacity: 1;
-    }
-
-    .admin-chat-messages {
-        flex: 1;
-        padding: 2rem;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        gap: 1.2rem;
-    }
-
-        .admin-chat-messages::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .admin-chat-messages::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .admin-chat-messages::-webkit-scrollbar-thumb {
-            background: rgba(160, 160, 160, 0.4);
-            border-radius: 10px;
-        }
-
-    .msg {
-        max-width: 70%;
-        padding: 1rem;
-        border-radius: 10px;
-        font-size: 0.95rem;
-        line-height: 1.5;
-    }
-
-    .msg-admin {
-        align-self: flex-end;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid #fff;
-        color: #fff;
-    }
-
-    .msg-user {
-        align-self: flex-start;
-        background: #222;
-        border: 1px solid #444;
-        color: #eee;
-    }
-
-    .archived-banner {
-        background: rgba(248, 113, 113, 0.1);
-        border: 1px solid #f87171;
-        color: #f87171;
-        padding: 1.2rem;
-        text-align: center;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    .chat-footer {
-        padding: 1.5rem;
-        background: rgba(10, 10, 10, 0.6);
-        border-top: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    #adminSendBtn {
-        background: #fff;
-        color: #000;
-        border: none;
-        transition: background 0.2s;
-    }
-
-        #adminSendBtn:hover {
-            background: #ccc;
-        }
-
-    .terminal-input {
-        background: #000 !important;
-        border: 1px solid #333 !important;
-        color: #fff !important;
-    }
-
-        .terminal-input:focus {
-            border-color: #fff !important;
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1) !important;
-        }
-
-    .btn-return {
-        background: transparent;
-        color: #fff;
-        border: 1px solid #444;
-        transition: all 0.2s;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-        .btn-return:hover {
-            border-color: #fff;
-            color: #fff;
-            background: rgba(255,255,255,0.05);
-        }
-</style>
-
-<div class="admin-chat-wrapper container-fluid">
-    <div class="d-flex justify-content-between align-items-start mb-4">
-        <div>
-            <h2 class="text-white fw-bold m-0 text-uppercase">@Model.Subject</h2>
-            <div class="small text-muted mt-1" style="color: #aaa !important; letter-spacing: 1px;">
-                INITIATED BY: @Model.User?.UserName | @Model.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy HH:mm")
-            </div>
-        </div>
-        <div class="d-flex gap-2 align-items-center">
-            <a asp-action="Index" class="btn btn-return px-4 fw-bold">
-                <i class="bi bi-arrow-left"></i> RETURN TO LIST
-            </a>
-            @if (Model.IsOpen)
-            {
-                <button type="button" class="btn btn-outline-warning px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#closeModal" style="color:#fbbf24; border-color:#fbbf24;">
-                    CLOSE MISSION
-                </button>
-            }
-            else
-            {
-                <button type="button" class="btn btn-success px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#reopenModal">
-                    RE-OPEN TICKET
-                </button>
-            }
-
-            @if (Model.User != null && !Model.User.IsBanned)
-            {
-                <button type="button" class="btn btn-outline-danger px-4 fw-bold ms-2" data-bs-toggle="modal" data-bs-target="#banModal" style="border-color: #ef4444; color: #ef4444;">
-                    <i class="bi bi-person-x-fill"></i> BAN OPERATIVE
-                </button>
-            }
-            else if (Model.User != null && Model.User.IsBanned)
-            {
-                <span class="badge bg-danger ms-2 px-3 py-2" style="font-size: 0.75rem; letter-spacing: 2px;">BANNED</span>
-            }
+@if (Model == null)
+{
+    <div class="container-fluid p-5">
+        <div class="alert alert-danger" style="background: rgba(220, 38, 38, 0.15); border: 1px solid #ef4444; color: #ef4444;">
+            <h4 class="fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i> SYSTEM ERROR</h4>
+            <p>Ticket data could not be loaded or was not found in the database. The operation cannot proceed.</p>
+            <a asp-action="Index" class="btn btn-outline-danger mt-2 fw-bold">RETURN TO DASHBOARD</a>
         </div>
     </div>
+}
+else
+{
+    <style>
+        .admin-chat-wrapper {
+            padding: 2rem;
+        }
 
-    <div class="admin-chat-container shadow-lg">
-        <div class="admin-chat-messages" id="adminChatBox">
-            @foreach (var msg in Model.Messages.OrderBy(m => m.SentAt))
-            {
-                if (msg.Content.StartsWith("[CLOSED]") || msg.Content.StartsWith("[RE-OPENED]") || msg.Content.StartsWith("[BANNED]"))
+        .admin-chat-container {
+            height: 600px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #333;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .msg-system {
+            align-self: center;
+            background: transparent;
+            color: #888;
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 0.8rem 2rem;
+            border-top: 1px dashed #333;
+            border-bottom: 1px dashed #333;
+            margin: 1.5rem 0;
+            text-align: center;
+            width: 80%;
+        }
+
+        .text-muted {
+            color: #aaa !important;
+        }
+
+        .form-control::placeholder {
+            color: #666 !important;
+            opacity: 1;
+        }
+
+        .admin-chat-messages {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+
+            .admin-chat-messages::-webkit-scrollbar {
+                width: 8px;
+            }
+
+            .admin-chat-messages::-webkit-scrollbar-track {
+                background: rgba(255, 255, 255, 0.05);
+            }
+
+            .admin-chat-messages::-webkit-scrollbar-thumb {
+                background: rgba(160, 160, 160, 0.4);
+                border-radius: 10px;
+            }
+
+        .msg {
+            max-width: 70%;
+            padding: 1rem;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .msg-admin {
+            align-self: flex-end;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #fff;
+            color: #fff;
+        }
+
+        .msg-user {
+            align-self: flex-start;
+            background: #222;
+            border: 1px solid #444;
+            color: #eee;
+        }
+
+        .archived-banner {
+            background: rgba(248, 113, 113, 0.1);
+            border: 1px solid #f87171;
+            color: #f87171;
+            padding: 1.2rem;
+            text-align: center;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .chat-footer {
+            padding: 1.5rem;
+            background: rgba(10, 10, 10, 0.6);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        #adminSendBtn {
+            background: #fff;
+            color: #000;
+            border: none;
+            transition: background 0.2s;
+        }
+
+            #adminSendBtn:hover {
+                background: #ccc;
+            }
+
+        .terminal-input {
+            background: #000 !important;
+            border: 1px solid #333 !important;
+            color: #fff !important;
+        }
+
+            .terminal-input:focus {
+                border-color: #fff !important;
+                box-shadow: 0 0 10px rgba(255, 255, 255, 0.1) !important;
+            }
+
+        .btn-return {
+            background: transparent;
+            color: #fff;
+            border: 1px solid #444;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+            .btn-return:hover {
+                border-color: #fff;
+                color: #fff;
+                background: rgba(255,255,255,0.05);
+            }
+    </style>
+
+    <div class="admin-chat-wrapper container-fluid">
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+                <h2 class="text-white fw-bold m-0 text-uppercase">@Model.Subject</h2>
+                <div class="small text-muted mt-1" style="color: #aaa !important; letter-spacing: 1px;">
+                    INITIATED BY: @Model.User?.UserName | @Model.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy HH:mm")
+                </div>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+                <a asp-action="Index" class="btn btn-return px-4 fw-bold">
+                    <i class="bi bi-arrow-left"></i> RETURN TO LIST
+                </a>
+                @if (Model.IsOpen)
                 {
-                    <div class="msg-system" style="@(msg.Content.StartsWith("[BANNED]") ? "color:#ef4444; border-color:#ef4444;" : "")">
-                        <i class="bi bi-info-circle me-1"></i> @msg.Content
-                    </div>
+                    <button type="button" class="btn btn-outline-warning px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#closeModal" style="color:#fbbf24; border-color:#fbbf24;">
+                        CLOSE MISSION
+                    </button>
                 }
                 else
                 {
-                    <div class="msg @(msg.IsAdminReply ? "msg-admin" : "msg-user")">
-                        @msg.Content
-                    </div>
+                    <button type="button" class="btn btn-success px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#reopenModal">
+                        RE-OPEN TICKET
+                    </button>
                 }
+
+                @if (Model.User != null && !Model.User.IsBanned)
+                {
+                    <button type="button" class="btn btn-outline-danger px-4 fw-bold ms-2" data-bs-toggle="modal" data-bs-target="#banModal" style="border-color: #ef4444; color: #ef4444;">
+                        <i class="bi bi-person-x-fill"></i> BAN OPERATIVE
+                    </button>
+                }
+                else if (Model.User != null && Model.User.IsBanned)
+                {
+                    <span class="badge bg-danger ms-2 px-3 py-2" style="font-size: 0.75rem; letter-spacing: 2px;">BANNED</span>
+                }
+            </div>
+        </div>
+
+        <div class="admin-chat-container shadow-lg">
+            <div class="admin-chat-messages" id="adminChatBox">
+                @foreach (var msg in Model.Messages.OrderBy(m => m.SentAt))
+                {
+                    if (msg.Content.StartsWith("[CLOSED]") || msg.Content.StartsWith("[RE-OPENED]") || msg.Content.StartsWith("[BANNED]"))
+                    {
+                        <div class="msg-system" style="@(msg.Content.StartsWith("[BANNED]") ? "color:#ef4444; border-color:#ef4444;" : "")">
+                            <i class="bi bi-info-circle me-1"></i> @msg.Content
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="msg @(msg.IsAdminReply ? "msg-admin" : "msg-user")">
+                            @msg.Content
+                        </div>
+                    }
+                }
+            </div>
+
+            @if (Model.IsOpen)
+            {
+                <div class="chat-footer d-flex gap-3">
+                    <input type="text" id="adminMsgInput" class="form-control terminal-input py-2 px-3" placeholder="Transmit secured response..." autocomplete="off">
+                    <button id="adminSendBtn" class="btn px-5 fw-bold">SEND</button>
+                </div>
+            }
+            else
+            {
+                <div class="archived-banner">
+                    <i class="bi bi-lock-fill me-2"></i> THIS TRANSMISSION HAS BEEN ARCHIVED. READ-ONLY MODE ACTIVE.
+                </div>
+                <div class="archived-banner mt-3" style="font-size: 0.8rem; color: #888; border-color: #333; background: transparent;">
+                    <i class="bi bi-shield-lock-fill"></i> CONVERSATION TERMINATED ON @Model.Messages.LastOrDefault()?.SentAt.ToLocalTime().ToString("MMM dd, yyyy HH:mm")
+                </div>
             }
         </div>
-
-        @if (Model.IsOpen)
-        {
-            <div class="chat-footer d-flex gap-3">
-                <input type="text" id="adminMsgInput" class="form-control terminal-input py-2 px-3" placeholder="Transmit secured response..." autocomplete="off">
-                <button id="adminSendBtn" class="btn px-5 fw-bold">SEND</button>
-            </div>
-        }
-        else
-        {
-            <div class="archived-banner">
-                <i class="bi bi-lock-fill me-2"></i> THIS TRANSMISSION HAS BEEN ARCHIVED. READ-ONLY MODE ACTIVE.
-            </div>
-            <div class="archived-banner mt-3" style="font-size: 0.8rem; color: #888; border-color: #333; background: transparent;">
-                <i class="bi bi-shield-lock-fill"></i> CONVERSATION TERMINATED ON @Model.Messages.LastOrDefault()?.SentAt.ToLocalTime().ToString("MMM dd, yyyy HH:mm")
-            </div>
-        }
     </div>
-</div>
 
-<div class="modal fade" id="closeModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content bg-dark border-secondary">
-            <form asp-action="CloseTicket" method="post">
-                <input type="hidden" name="id" value="@Model.Id" />
-                <div class="modal-header border-secondary">
-                    <h5 class="modal-title text-white">FINAL TRANSMISSION</h5>
-                </div>
-                <div class="modal-body">
-                    <textarea name="closureMessage" class="form-control terminal-input" rows="4" placeholder="Enter final closing explanation..." required></textarea>
-                </div>
-                <div class="modal-footer border-secondary">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">ABORT</button>
-                    <button type="submit" class="btn btn-warning fw-bold text-dark">CONFIRM CLOSURE</button>
-                </div>
-            </form>
+    <div class="modal fade" id="closeModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark border-secondary">
+                <form asp-action="CloseTicket" method="post">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <div class="modal-header border-secondary">
+                        <h5 class="modal-title text-white">FINAL TRANSMISSION</h5>
+                    </div>
+                    <div class="modal-body">
+                        <textarea name="closureMessage" class="form-control terminal-input" rows="4" placeholder="Enter final closing explanation..." required></textarea>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">ABORT</button>
+                        <button type="submit" class="btn btn-warning fw-bold text-dark">CONFIRM CLOSURE</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-</div>
 
-<div class="modal fade" id="reopenModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content bg-dark border-secondary">
-            <form asp-action="ReopenTicket" method="post">
-                <input type="hidden" name="id" value="@Model.Id" />
-                <div class="modal-header border-secondary">
-                    <h5 class="modal-title text-white">RE-OPEN OPERATION</h5>
-                </div>
-                <div class="modal-body">
-                    <textarea name="openingReason" class="form-control terminal-input" rows="4" placeholder="Reason for re-opening this archived ticket..." required></textarea>
-                </div>
-                <div class="modal-footer border-secondary">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">CANCEL</button>
-                    <button type="submit" class="btn btn-success fw-bold">RE-OPEN NOW</button>
-                </div>
-            </form>
+    <div class="modal fade" id="reopenModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark border-secondary">
+                <form asp-action="ReopenTicket" method="post">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <div class="modal-header border-secondary">
+                        <h5 class="modal-title text-white">RE-OPEN OPERATION</h5>
+                    </div>
+                    <div class="modal-body">
+                        <textarea name="openingReason" class="form-control terminal-input" rows="4" placeholder="Reason for re-opening this archived ticket..." required></textarea>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">CANCEL</button>
+                        <button type="submit" class="btn btn-success fw-bold">RE-OPEN NOW</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-</div>
 
-<div class="modal fade" id="banModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content bg-dark border-danger">
-            <form asp-action="BanUser" method="post">
-                <input type="hidden" name="ticketId" value="@Model.Id" />
-                <div class="modal-header" style="border-bottom: 1px solid #dc3545;">
-                    <h5 class="modal-title text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i> PERMANENT BAN</h5>
-                </div>
-                <div class="modal-body">
-                    <p class="text-white small mb-3">You are about to permanently ban <strong>@Model.User?.UserName</strong> from the system. This action will lock their account, block future logins, and close this ticket immediately. State your reason clearly for the audit logs.</p>
-                    <textarea name="banReason" class="form-control terminal-input" rows="4" placeholder="Official reason for banishment..." required></textarea>
-                </div>
-                <div class="modal-footer border-secondary">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">ABORT</button>
-                    <button type="submit" class="btn btn-danger fw-bold">EXECUTE BAN</button>
-                </div>
-            </form>
+    <div class="modal fade" id="banModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark border-danger">
+                <form asp-action="BanUser" method="post">
+                    <input type="hidden" name="ticketId" value="@Model.Id" />
+                    <div class="modal-header" style="border-bottom: 1px solid #dc3545;">
+                        <h5 class="modal-title text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i> PERMANENT BAN</h5>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-white small mb-3">You are about to permanently ban <strong>@Model.User?.UserName</strong> from the system. State your reason clearly.</p>
+                        <textarea name="banReason" class="form-control terminal-input" rows="4" placeholder="Official reason for banishment..." required></textarea>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">ABORT</button>
+                        <button type="submit" class="btn btn-danger fw-bold">EXECUTE BAN</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-</div>
 
-@if (Model.IsOpen)
-{
-    @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
     <script>
         const connection = new signalR.HubConnectionBuilder()
@@ -295,21 +304,24 @@
 
         connection.on("ReceiveMessage", (message, isAdmin) => {
             const chat = document.getElementById("adminChatBox");
-            const div = document.createElement("div");
-            div.className = `msg ${isAdmin ? 'msg-admin' : 'msg-user'}`;
-            div.textContent = message;
-            chat.appendChild(div);
-            chat.scrollTop = chat.scrollHeight;
+            if (chat) {
+                const div = document.createElement("div");
+                div.className = `msg ${isAdmin ? 'msg-admin' : 'msg-user'}`;
+                div.textContent = message;
+                chat.appendChild(div);
+                chat.scrollTop = chat.scrollHeight;
+            }
         });
 
         connection.start().then(() => {
             connection.invoke("JoinTicketGroup", ticketId.toString());
             const chat = document.getElementById("adminChatBox");
-            chat.scrollTop = chat.scrollHeight;
+            if (chat) chat.scrollTop = chat.scrollHeight;
         }).catch(err => console.error(err.toString()));
 
         const sendMessage = () => {
             const input = document.getElementById("adminMsgInput");
+            if (!input) return;
             const message = input.value.trim();
             if (message) {
                 connection.invoke("SendMessage", ticketId, message)
@@ -318,10 +330,16 @@
             }
         };
 
-        document.getElementById("adminSendBtn").addEventListener("click", sendMessage);
-        document.getElementById("adminMsgInput").addEventListener("keypress", (e) => {
-            if (e.key === 'Enter') sendMessage();
-        });
+        const sendBtn = document.getElementById("adminSendBtn");
+        if (sendBtn) {
+            sendBtn.addEventListener("click", sendMessage);
+        }
+
+        const msgInput = document.getElementById("adminMsgInput");
+        if (msgInput) {
+            msgInput.addEventListener("keypress", (e) => {
+                if (e.key === 'Enter') sendMessage();
+            });
+        }
     </script>
-    }
 }

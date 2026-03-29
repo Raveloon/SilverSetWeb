@@ -21,5 +21,7 @@ public class Ticket
     [ForeignKey("UserId")]
     public AppUser? User { get; set; }
 
+    public bool IsSpam { get; set; } = false;
+    public string? SpamReason { get; set; }
     public ICollection<TicketMessage> Messages { get; set; } = new List<TicketMessage>();
 }

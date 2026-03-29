@@ -1,0 +1,36 @@
+﻿@{
+    ViewData["Title"] = "New Topic";
+}
+
+<div class="container py-5">
+    <div class="form-card" style="max-width: 800px; margin: auto; background: rgba(10,10,10,0.5); border: 1px solid #222; padding: 2rem;">
+        <h4 class="text-white mb-4">> INITIATE_NEW_TOPIC</h4>
+
+        <form asp-action="CreateTopic" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="categoryId" value="@ViewBag.CategoryId" />
+
+            @* Honeypot Field *@
+            <input type="text" name="honeyPot" style="display:none" tabindex="-1" autocomplete="off" />
+
+            <div class="mb-3">
+                <label class="form-label small text-muted">SUBJECT_HEADER</label>
+                <input type="text" name="title" class="form-control bg-dark border-secondary text-white" required />
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label small text-muted">CONTENT_BODY</label>
+                <textarea name="content" class="form-control bg-dark border-secondary text-white" rows="8" required></textarea>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center">
+                @* Turnstile *@
+                <div class="cf-turnstile" data-sitekey="1x00000000000000000000AA"></div>
+
+                <button type="submit" class="btn btn-light fw-bold px-4">PUBLISH</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
