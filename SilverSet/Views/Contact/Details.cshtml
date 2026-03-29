@@ -5,33 +5,53 @@
 
 <style>
     .history-wrapper {
-        padding: 4rem 0;
+        padding: 2rem 1rem;
         min-height: 80vh;
         max-width: 900px;
         margin: 0 auto;
+    }
+
+    @@media (min-width: 768px) {
+        .history-wrapper
+
+    {
+        padding: 4rem 0;
+    }
+
     }
 
     .chat-container {
         display: flex;
         flex-direction: column;
         background: rgba(15, 15, 15, 0.9);
-        border-radius: 8px;
         border: 1px solid #333;
+        border-radius: 8px;
         overflow: hidden;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
 
     .chat-header {
-        padding: 1.5rem;
+        padding: 1.2rem 1.5rem;
         background: transparent;
         border-bottom: 1px solid #333;
         display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    @@media (min-width: 576px) {
+        .chat-header
+
+    {
+        flex-direction: row;
         justify-content: space-between;
         align-items: center;
     }
 
+    }
+
     .chat-messages {
-        padding: 2rem;
+        padding: 1.5rem;
         display: flex;
         flex-direction: column;
         gap: 1.2rem;
@@ -39,21 +59,30 @@
         overflow-y: auto;
     }
 
-        .chat-messages::-webkit-scrollbar {
-            width: 8px;
-        }
+    @@media (min-width: 768px) {
+        .chat-messages
 
-        .chat-messages::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
-        }
+    {
+        padding: 2rem;
+    }
 
-        .chat-messages::-webkit-scrollbar-thumb {
-            background: #444;
-            border-radius: 4px;
-        }
+    }
+
+    .chat-messages::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .chat-messages::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .chat-messages::-webkit-scrollbar-thumb {
+        background: #444;
+        border-radius: 4px;
+    }
 
     .msg-bubble {
-        max-width: 80%;
+        max-width: 85%;
         padding: 0.85rem 1.2rem;
         border-radius: 4px;
         font-size: 0.85rem;
@@ -82,12 +111,12 @@
         font-weight: 800;
         letter-spacing: 1.5px;
         text-transform: uppercase;
-        padding: 0.8rem 2rem;
+        padding: 0.8rem 1.5rem;
         border-top: 1px dashed #333;
         border-bottom: 1px dashed #333;
-        margin: 1.5rem 0;
+        margin: 1rem 0;
         text-align: center;
-        width: 80%;
+        width: 90%;
     }
 
     .archived-banner {
@@ -99,7 +128,18 @@
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 1px;
-        font-size: 0.8rem;
+        font-size: 0.75rem;
+    }
+
+    .quarantine-header {
+        background: rgba(239, 68, 68, 0.1);
+        border-bottom: 1px solid #ef4444;
+        padding: 1rem;
+        text-align: center;
+        color: #ef4444;
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 2px;
     }
 
     .btn-return {
@@ -127,16 +167,23 @@
 
 <main class="container history-wrapper">
     <div style="text-align: center; margin-bottom: 2rem;">
-        <h2 style="color: #fff; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; margin: 0;">LOG #@Model.Id</h2>
-        <p style="color: #666; font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; margin-top: 0.5rem;">Accessing encrypted archives</p>
+        <h2 style="color: #fff; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; margin: 0; font-size: 1.5rem;">LOG #@Model.Id</h2>
+        <p style="color: #666; font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase; margin-top: 0.5rem;">Accessing encrypted archives</p>
     </div>
 
     <div class="chat-container">
+        @if (Model.IsSpam)
+        {
+            <div class="quarantine-header">
+                <i class="bi bi-shield-slash me-2"></i> SECURITY BREACH DETECTED: TRANSMISSION QUARANTINED
+            </div>
+        }
+
         <header class="chat-header">
-            <div style="color:white; font-weight:800; font-size:1.1rem; letter-spacing: 1px; text-transform: uppercase;">
+            <div style="color:white; font-weight:800; font-size:1rem; letter-spacing: 1px; text-transform: uppercase; word-break: break-word;">
                 @Model.Subject
             </div>
-            <div style="color: #666; font-size: 0.7rem; font-weight: 800; letter-spacing: 1.5px;">
+            <div style="color: #666; font-size: 0.65rem; font-weight: 800; letter-spacing: 1.5px; white-space: nowrap;">
                 INITIATED: @Model.CreatedAt.ToLocalTime().ToString("dd.MM.yy HH:mm")
             </div>
         </header>
@@ -144,10 +191,14 @@
         <div class="chat-messages">
             @foreach (var msg in Model.Messages.OrderBy(m => m.SentAt))
             {
-                if (msg.Content.StartsWith("[CLOSED]") || msg.Content.StartsWith("[RE-OPENED]"))
+                if (msg.Content.StartsWith("[CLOSED]") ||
+                msg.Content.StartsWith("[RE-OPENED]") ||
+                msg.Content.StartsWith("[BANNED]") ||
+                msg.Content.StartsWith("[FLAGGED]") ||
+                msg.Content.StartsWith("[RESTORED]"))
                 {
-                    <div class="msg-system">
-                        @msg.Content
+                    <div class="msg-system" style="@(msg.Content.Contains("[BANNED]") || msg.Content.Contains("[FLAGGED]") ? "color:#ef4444; border-color:#ef4444;" : msg.Content.Contains("[RESTORED]") ? "color:#10b981; border-color:#10b981;" : "")">
+                        <i class="bi bi-info-circle me-1"></i> @msg.Content
                     </div>
                 }
                 else
@@ -161,8 +212,17 @@
 
         @if (!Model.IsOpen)
         {
-            <div class="archived-banner">
-                <i class="bi bi-lock-fill me-2"></i> THIS TRANSMISSION HAS BEEN ARCHIVED. READ-ONLY MODE ACTIVE.
+            <div class="archived-banner" style="@(Model.User?.IsBanned == true ? "color: #ef4444; border-color: rgba(239, 68, 68, 0.2);" : "")">
+                @if (Model.User?.IsBanned == true)
+                {
+                    <i class="bi bi-person-x-fill me-2"></i>
+                    <span>OPERATIVE TERMINATED. ACCESS PERMANENTLY REVOKED.</span>
+                }
+                else
+                {
+                    <i class="bi bi-lock-fill me-2"></i>
+                    <span>THIS TRANSMISSION HAS BEEN ARCHIVED. READ-ONLY MODE ACTIVE.</span>
+                }
             </div>
         }
     </div>

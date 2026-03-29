@@ -47,6 +47,7 @@ public class Program
         builder.Services.AddMemoryCache();
 
         builder.Services.AddScoped<ProfanityFilterService>();
+        builder.Services.AddScoped<BannedUserFilter>();
 
         builder.Services.AddControllersWithViews(options =>
         {
@@ -65,7 +66,7 @@ public class Program
             options.LoginPath = "/Account/Login";
             options.AccessDeniedPath = "/Account/Login";
             options.Cookie.HttpOnly = true;
-            options.Cookie.SecurePolicy = CookieSecurePolicy.Always; 
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
             options.Cookie.SameSite = SameSiteMode.Strict;
             options.ExpireTimeSpan = TimeSpan.FromHours(2);
             options.SlidingExpiration = false;
@@ -123,7 +124,6 @@ public class Program
                 var userManager = services.GetRequiredService<UserManager<AppUser>>();
                 var roleManager = services.GetRequiredService<RoleManager<AppRole>>();
                 var configuration = services.GetRequiredService<IConfiguration>();
-                var logger = services.GetRequiredService<ILogger<Program>>();
 
                 string? adminRole = configuration["AdminSetup:AdminRole"];
                 string? adminName = configuration["AdminSetup:AdminName"];

@@ -373,19 +373,42 @@
         <script>
             const connection = new signalR.HubConnectionBuilder().withUrl("/ticketHub").build();
             const tId = "@Model.ActiveTicket.Id";
+
             connection.on("ReceiveMessage", (m, isAdmin) => {
                 const box = document.getElementById("chatBox");
-                const d = document.createElement("div");
-                d.className = `msg-bubble ${isAdmin ? "msg-admin" : "msg-user"}`;
-                d.textContent = m;
-                box.appendChild(d);
-                box.scrollTop = box.scrollHeight;
+                if (box) {
+                    const d = document.createElement("div");
+                    d.className = `msg-bubble ${isAdmin ? "msg-admin" : "msg-user"}`;
+                    d.textContent = m;
+                    box.appendChild(d);
+                    box.scrollTop = box.scrollHeight;
+                }
             });
+
             connection.start().then(() => connection.invoke("JoinTicketGroup", tId));
-            document.getElementById("sendBtn").onclick = () => {
-                const i = document.getElementById("messageInput");
-                if(i.value.trim()) { connection.invoke("SendMessage", parseInt(tId), i.value.trim()); i.value=""; }
+
+            const transmitMessage = () => {
+                const input = document.getElementById("messageInput");
+                const message = input.value.trim();
+                if (message) {
+                    connection.invoke("SendMessage", parseInt(tId), message);
+                    input.value = "";
+                }
             };
+
+            const sendBtn = document.getElementById("sendBtn");
+            if (sendBtn) {
+                sendBtn.addEventListener("click", transmitMessage);
+            }
+
+            const msgInput = document.getElementById("messageInput");
+            if (msgInput) {
+                msgInput.addEventListener("keypress", (e) => {
+                    if (e.key === 'Enter') {
+                        transmitMessage();
+                    }
+                });
+            }
         </script>
     }
 }
