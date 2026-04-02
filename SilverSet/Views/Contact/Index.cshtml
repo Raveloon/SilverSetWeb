@@ -23,7 +23,7 @@
     }
 
     .contact-subtitle {
-        color: #888;
+        color: #ccc;
         letter-spacing: 2px;
         font-size: 0.9rem;
         margin-top: 0.5rem;
@@ -98,7 +98,7 @@
     }
 
     .info-content p {
-        color: #888;
+        color: #ccc;
         font-size: 0.85rem;
         margin: 0;
         line-height: 1.5;
@@ -134,7 +134,7 @@
         gap: 1rem;
         background: #0a0a0a;
         border: 1px dashed #444;
-        color: #888;
+        color: #ccc;
         padding: 1.5rem;
         border-radius: 4px;
         cursor: pointer;
@@ -219,10 +219,17 @@
             border-color: #ccc;
         }
 
+        .btn-submit-ticket:disabled {
+            background: #333;
+            border-color: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+
     .btn-history {
         display: block;
         text-align: center;
-        color: #888;
+        color: #ccc;
         text-decoration: none;
         font-size: 0.75rem;
         font-weight: 800;
@@ -281,12 +288,14 @@
     }
 
     .msg-bubble {
-        max-width: 80%;
+        max-width: 85%;
         padding: 0.85rem 1.2rem;
         border-radius: 4px;
         font-size: 0.85rem;
         line-height: 1.6;
         word-wrap: break-word;
+        word-break: break-all;
+        overflow-wrap: anywhere;
     }
 
     .msg-user {
@@ -310,6 +319,12 @@
 
     .input-wrapper {
         display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .input-row {
+        display: flex;
         gap: 0.8rem;
         align-items: center;
     }
@@ -325,6 +340,23 @@
         align-items: center;
         justify-content: center;
         cursor: pointer;
+        transition: 0.2s;
+    }
+
+        .btn-send:disabled {
+            background: #333;
+            border-color: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+    .char-counter {
+        font-size: 0.65rem;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+        color: #bbb;
+        text-transform: uppercase;
+        text-align: right;
     }
 
     @@media (max-width: 991px) {
@@ -342,7 +374,7 @@
 
     <div class="contact-grid">
         <aside class="contact-panel">
-            <h2 class="panel-title"><i class="bi bi-hdd-network"></i> Global Comms</h2>
+            <h2 class="panel-title"><i class="bi bi-hdd-network"></i> contact informations</h2>
             <ul class="info-list">
                 <li class="info-item">
                     <div class="info-icon"><i class="bi bi-envelope-paper"></i></div>
@@ -369,7 +401,7 @@
                     <article class="chat-container">
                         <header class="chat-header">
                             <div>
-                                <span style="color:#666; font-size:0.6rem; font-weight:800;">TICKET #@Model.ActiveTicket.Id</span>
+                                <span style="color:#bbb; font-size:0.6rem; font-weight:800;">TICKET #@Model.ActiveTicket.Id</span>
                                 <div style="color:white; font-weight:700;">@Model.ActiveTicket.Subject</div>
                             </div>
                             <div style="background:#fff; color:#000; padding:0.3rem 0.8rem; border-radius:4px; font-size:0.65rem; font-weight:900;">ACTIVE</div>
@@ -394,8 +426,11 @@
 
                         <footer class="chat-input-area">
                             <div class="input-wrapper">
-                                <input type="text" id="messageInput" class="form-control-custom mb-0" placeholder="Transmit real-time message..." autocomplete="off" />
-                                <button id="sendBtn" class="btn-send"><i class="bi bi-send-fill"></i></button>
+                                <div class="input-row">
+                                    <input type="text" id="messageInput" class="form-control-custom mb-0" placeholder="Transmit real-time message..." autocomplete="off" maxlength="500" />
+                                    <button id="sendBtn" class="btn-send" disabled><i class="bi bi-send-fill"></i></button>
+                                </div>
+                                <div id="chatCounter" class="char-counter">0 / 500 CHARACTERS</div>
                             </div>
                         </footer>
                     </article>
@@ -404,8 +439,9 @@
                 {
                     <form asp-action="CreateTicket" method="post" enctype="multipart/form-data" id="ticketForm">
                         @Html.AntiForgeryToken()
-                        <input type="text" name="subject" class="form-control-custom" placeholder="MISSION SUBJECT..." required>
-                        <textarea name="message" class="form-control-custom" rows="4" placeholder="DETAILED INTEL..." required></textarea>
+                        <input type="text" name="subject" class="form-control-custom" placeholder="MISSION SUBJECT..." required maxlength="100">
+                        <textarea name="message" id="newTicketMessage" class="form-control-custom" rows="4" placeholder="DETAILED INTEL..." required maxlength="500"></textarea>
+                        <div id="newTicketCounter" class="char-counter" style="margin-bottom: 1.5rem; margin-top: -1rem;">0 / 500 CHARACTERS</div>
 
                         <div class="file-upload-wrapper">
                             <input type="file" id="attachments" multiple hidden accept="image/*">
@@ -420,7 +456,7 @@
                         <div class="mb-4 d-flex justify-content-center">
                             <div class="cf-turnstile" data-sitekey="@Configuration["CloudflareTurnstile:SiteKey"]" data-theme="dark"></div>
                         </div>
-                        <button type="submit" class="btn-submit-ticket">INITIALIZE MISSION</button>
+                        <button type="submit" id="submitTicketBtn" class="btn-submit-ticket" disabled>INITIALIZE MISSION</button>
                     </form>
 
                     @if (Model.ClosedTicketsCount > 0)
@@ -452,16 +488,40 @@
 
         let selectedFiles = [];
 
+        function setupCounter(inputId, counterId, buttonId) {
+            const input = document.getElementById(inputId);
+            const counter = document.getElementById(counterId);
+            const btn = document.getElementById(buttonId);
+
+            if (input && counter && btn) {
+                input.addEventListener('input', () => {
+                    const len = input.value.trim().length;
+                    counter.textContent = `${len} / 500 CHARACTERS`;
+
+                    if (len >= 500) {
+                        counter.style.color = "#ef4444";
+                    } else if (len >= 450) {
+                        counter.style.color = "#fbbf24";
+                    } else {
+                        counter.style.color = "#bbb";
+                    }
+
+                    btn.disabled = (len === 0 || len > 500);
+                });
+            }
+        }
+
+        setupCounter('newTicketMessage', 'newTicketCounter', 'submitTicketBtn');
+        setupCounter('messageInput', 'chatCounter', 'sendBtn');
+
         if(fileInput) {
             fileInput.addEventListener('change', function() {
                 const files = Array.from(this.files);
-
                 files.forEach(file => {
                     if (selectedFiles.length < 5) {
                         selectedFiles.push(file);
                     }
                 });
-
                 renderPreviews();
                 this.value = "";
             });
@@ -469,12 +529,10 @@
 
         function renderPreviews() {
             previewArea.innerHTML = "";
-
             selectedFiles.forEach((file, index) => {
                 const reader = new FileReader();
                 const box = document.createElement("div");
                 box.className = "preview-box";
-
                 reader.onload = (e) => {
                     box.innerHTML = `
                         <img src="${e.target.result}">
@@ -484,7 +542,6 @@
                 reader.readAsDataURL(file);
                 previewArea.appendChild(box);
             });
-
             if(selectedFiles.length > 0) {
                 labelText.innerHTML = `<span style="color:#fff;">${selectedFiles.length}</span> FILE(S) SELECTED`;
             } else {
@@ -501,14 +558,12 @@
             ticketForm.addEventListener('submit', function(e) {
                 const dt = new DataTransfer();
                 selectedFiles.forEach(file => dt.items.add(file));
-
                 const finalInput = document.createElement('input');
                 finalInput.type = 'file';
                 finalInput.name = 'attachments';
                 finalInput.multiple = true;
                 finalInput.files = dt.files;
                 finalInput.style.display = 'none';
-
                 this.appendChild(finalInput);
             });
         }
@@ -516,33 +571,37 @@
         @if (Model.ActiveTicket != null)
         {
             <text>
-                const connection = new signalR.HubConnectionBuilder().withUrl("/ticketHub").withAutomaticReconnect().build();
-                const chatBox = document.getElementById("chatBox");
-                const messageInput = document.getElementById("messageInput");
-                const sendBtn = document.getElementById("sendBtn");
-                const ticketId = "@Model.ActiveTicket.Id";
+                    const connection = new signalR.HubConnectionBuilder().withUrl("/ticketHub").withAutomaticReconnect().build();
+                    const chatBox = document.getElementById("chatBox");
+                    const messageInput = document.getElementById("messageInput");
+                    const sendBtn = document.getElementById("sendBtn");
+                    const chatCounter = document.getElementById("chatCounter");
+                    const ticketId = "@Model.ActiveTicket.Id";
 
-                if(chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+                    if(chatBox) chatBox.scrollTop = chatBox.scrollHeight;
 
-                connection.on("ReceiveMessage", (message, isAdmin) => {
-                    const div = document.createElement("div");
-                    div.className = `msg-bubble ${isAdmin ? 'msg-admin' : 'msg-user'}`;
-                    div.textContent = message;
-                    chatBox.appendChild(div);
-                    chatBox.scrollTop = chatBox.scrollHeight;
-                });
+                    connection.on("ReceiveMessage", (message, isAdmin) => {
+                        const div = document.createElement("div");
+                        div.className = `msg-bubble ${isAdmin ? 'msg-admin' : 'msg-user'}`;
+                        div.textContent = message;
+                        chatBox.appendChild(div);
+                        chatBox.scrollTop = chatBox.scrollHeight;
+                    });
 
-                connection.start().then(() => connection.invoke("JoinTicketGroup", ticketId)).catch(console.error);
+                    connection.start().then(() => connection.invoke("JoinTicketGroup", ticketId)).catch(console.error);
 
-                const transmit = () => {
-                    const msg = messageInput.value.trim();
-                    if (msg) {
-                        connection.invoke("SendMessage", parseInt(ticketId), msg).catch(console.error);
-                        messageInput.value = "";
-                    }
-                };
-                sendBtn?.addEventListener("click", transmit);
-                messageInput?.addEventListener("keypress", (e) => { if (e.key === "Enter") transmit(); });
+                    const transmit = () => {
+                        const msg = messageInput.value.trim();
+                        if (msg && msg.length <= 500) {
+                            connection.invoke("SendMessage", parseInt(ticketId), msg).catch(console.error);
+                            messageInput.value = "";
+                            chatCounter.textContent = "0 / 500 CHARACTERS";
+                            chatCounter.style.color = "#bbb";
+                            sendBtn.disabled = true;
+                        }
+                    };
+                    sendBtn.addEventListener("click", transmit);
+                    messageInput.addEventListener("keypress", (e) => { if (e.key === "Enter") transmit(); });
             </text>
         }
     </script>
