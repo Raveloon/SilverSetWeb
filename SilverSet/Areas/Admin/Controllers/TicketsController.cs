@@ -33,9 +33,13 @@ public class TicketsController : Controller
         _profanityFilter = profanityFilter;
     }
 
-    public async Task<IActionResult> Index(string searchTerm, string status, string timeRange)
+    public async Task<IActionResult> Index(string searchTerm, string status, string timeRange, string view = "active")
     {
-        var query = _context.Tickets.Include(t => t.User).AsQueryable();
+        var query = _context.Tickets.AsNoTracking().Include(t => t.User).AsQueryable();
+
+        ViewBag.HasActiveTickets = await _context.Tickets.AnyAsync(t => !t.IsSpam && t.IsOpen);
+        ViewBag.HasActiveSpamTickets = await _context.Tickets.AnyAsync(t => t.IsSpam);
+        ViewBag.ActiveMenu = (view == "spam") ? "Spam" : "Tickets";
 
         if (!string.IsNullOrEmpty(searchTerm))
         {
@@ -48,10 +52,7 @@ public class TicketsController : Controller
         DateTime? filterDate = timeRange switch
         {
             "7days" => DateTime.UtcNow.AddDays(-7),
-            "15days" => DateTime.UtcNow.AddDays(-15),
             "1month" => DateTime.UtcNow.AddMonths(-1),
-            "3months" => DateTime.UtcNow.AddMonths(-3),
-            "1year" => DateTime.UtcNow.AddYears(-1),
             _ => null
         };
 
@@ -80,12 +81,16 @@ public class TicketsController : Controller
     public async Task<IActionResult> Details(int id)
     {
         var ticket = await _context.Tickets
+            .AsNoTracking()
             .Include(t => t.User)
             .Include(t => t.Messages)
+            .Include(t => t.Attachments)
             .FirstOrDefaultAsync(t => t.Id == id);
 
         if (ticket == null) return NotFound();
 
+        ViewBag.HasActiveTickets = await _context.Tickets.AnyAsync(t => !t.IsSpam && t.IsOpen);
+        ViewBag.HasActiveSpamTickets = await _context.Tickets.AnyAsync(t => t.IsSpam);
         ViewBag.ActiveMenu = ticket.IsSpam ? "Spam" : "Tickets";
 
         foreach (var msg in ticket.Messages)
@@ -102,6 +107,8 @@ public class TicketsController : Controller
         if (string.IsNullOrWhiteSpace(word)) return BadRequest();
 
         var normalizedWord = word.Trim().ToLower();
+        if (normalizedWord.Length > 100) normalizedWord = normalizedWord.Substring(0, 100);
+
         var exists = await _context.BadWords.AnyAsync(b => b.Word == normalizedWord);
 
         if (!exists)
@@ -119,16 +126,19 @@ public class TicketsController : Controller
     public async Task<IActionResult> CloseTicket(int id, string closureMessage)
     {
         var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.Id == id);
-        if (ticket == null || string.IsNullOrWhiteSpace(closureMessage)) return RedirectToAction(nameof(Details), new { id });
+        if (ticket == null || string.IsNullOrWhiteSpace(closureMessage)) return RedirectToAction(nameof(Index));
 
-        var adminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(adminId)) return Unauthorized();
+        var adminIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(adminIdClaim) || !int.TryParse(adminIdClaim, out int adminId)) return Unauthorized();
+
+        string safeMessage = closureMessage.Trim();
+        if (safeMessage.Length > 450) safeMessage = safeMessage.Substring(0, 450);
 
         var finalMsg = new TicketMessage
         {
             TicketId = id,
-            SenderId = int.Parse(adminId),
-            Content = "[CLOSED] " + closureMessage.Trim(),
+            SenderId = adminId,
+            Content = "[CLOSED] " + safeMessage,
             IsAdminReply = true,
             SentAt = DateTime.UtcNow
         };
@@ -145,16 +155,19 @@ public class TicketsController : Controller
     public async Task<IActionResult> ReopenTicket(int id, string openingReason)
     {
         var ticket = await _context.Tickets.FindAsync(id);
-        if (ticket == null || string.IsNullOrWhiteSpace(openingReason)) return RedirectToAction(nameof(Details), new { id });
+        if (ticket == null || string.IsNullOrWhiteSpace(openingReason)) return RedirectToAction(nameof(Index));
 
-        var adminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(adminId)) return Unauthorized();
+        var adminIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(adminIdClaim) || !int.TryParse(adminIdClaim, out int adminId)) return Unauthorized();
+
+        string safeReason = openingReason.Trim();
+        if (safeReason.Length > 450) safeReason = safeReason.Substring(0, 450);
 
         var systemMsg = new TicketMessage
         {
             TicketId = id,
-            SenderId = int.Parse(adminId),
-            Content = "[RE-OPENED] " + openingReason.Trim(),
+            SenderId = adminId,
+            Content = "[RE-OPENED] " + safeReason,
             IsAdminReply = true,
             SentAt = DateTime.UtcNow
         };
@@ -173,8 +186,8 @@ public class TicketsController : Controller
         var ticket = await _context.Tickets.FindAsync(id);
         if (ticket == null) return RedirectToAction(nameof(Index));
 
-        var adminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(adminId)) return Unauthorized();
+        var adminIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(adminIdClaim) || !int.TryParse(adminIdClaim, out int adminId)) return Unauthorized();
 
         ticket.IsSpam = false;
         ticket.SpamReason = null;
@@ -182,7 +195,7 @@ public class TicketsController : Controller
         var systemMsg = new TicketMessage
         {
             TicketId = id,
-            SenderId = int.Parse(adminId),
+            SenderId = adminId,
             Content = "[RESTORED] Ticket has been marked as safe and restored to active list.",
             IsAdminReply = true,
             SentAt = DateTime.UtcNow
@@ -201,17 +214,20 @@ public class TicketsController : Controller
         var ticket = await _context.Tickets.FindAsync(id);
         if (ticket == null || string.IsNullOrWhiteSpace(reason)) return RedirectToAction(nameof(Index));
 
-        var adminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(adminId)) return Unauthorized();
+        var adminIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(adminIdClaim) || !int.TryParse(adminIdClaim, out int adminId)) return Unauthorized();
+
+        string cleanReason = reason.Trim();
+        if (cleanReason.Length > 480) cleanReason = cleanReason.Substring(0, 480);
 
         ticket.IsSpam = true;
-        ticket.SpamReason = "Manual Flag: " + reason.Trim();
+        ticket.SpamReason = "MANUAL : " + cleanReason;
 
         var systemMsg = new TicketMessage
         {
             TicketId = id,
-            SenderId = int.Parse(adminId),
-            Content = "[FLAGGED] " + reason.Trim(),
+            SenderId = adminId,
+            Content = "[FLAGGED] " + cleanReason,
             IsAdminReply = true,
             SentAt = DateTime.UtcNow
         };
@@ -229,12 +245,15 @@ public class TicketsController : Controller
         var ticket = await _context.Tickets.Include(t => t.User).FirstOrDefaultAsync(t => t.Id == ticketId);
         if (ticket == null || ticket.User == null || string.IsNullOrWhiteSpace(banReason)) return RedirectToAction(nameof(Index));
 
-        var adminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(adminId)) return Unauthorized();
+        var adminIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(adminIdClaim) || !int.TryParse(adminIdClaim, out int adminId)) return Unauthorized();
+
+        string safeBanReason = banReason.Trim();
+        if (safeBanReason.Length > 450) safeBanReason = safeBanReason.Substring(0, 450);
 
         var user = ticket.User;
         user.IsBanned = true;
-        user.BanReason = banReason.Trim();
+        user.BanReason = safeBanReason;
         user.LockoutEnd = DateTimeOffset.MaxValue;
 
         await _userManager.UpdateAsync(user);
@@ -242,8 +261,8 @@ public class TicketsController : Controller
         var systemMsg = new TicketMessage
         {
             TicketId = ticketId,
-            SenderId = int.Parse(adminId),
-            Content = "[BANNED] " + banReason.Trim(),
+            SenderId = adminId,
+            Content = "[BANNED] " + safeBanReason,
             IsAdminReply = true,
             SentAt = DateTime.UtcNow
         };

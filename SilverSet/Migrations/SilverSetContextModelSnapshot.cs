@@ -289,9 +289,12 @@ namespace SilverSet.Migrations
 
                     b.Property<string>("Word")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Word")
+                        .IsUnique();
 
                     b.ToTable("BadWords");
                 });
@@ -447,7 +450,8 @@ namespace SilverSet.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("SpamReason")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("Subject")
                         .IsRequired()
@@ -459,9 +463,40 @@ namespace SilverSet.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("IsOpen");
+
+                    b.HasIndex("IsSpam");
+
                     b.HasIndex("UserId");
 
                     b.ToTable("Tickets");
+                });
+
+            modelBuilder.Entity("SilverSet.Models.Entities.TicketAttachment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("FileUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TicketId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TicketId");
+
+                    b.ToTable("TicketAttachment");
                 });
 
             modelBuilder.Entity("SilverSet.Models.Entities.TicketMessage", b =>
@@ -491,6 +526,8 @@ namespace SilverSet.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("SenderId");
+
+                    b.HasIndex("SentAt");
 
                     b.HasIndex("TicketId");
 
@@ -627,6 +664,17 @@ namespace SilverSet.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SilverSet.Models.Entities.TicketAttachment", b =>
+                {
+                    b.HasOne("SilverSet.Models.Entities.Ticket", "Ticket")
+                        .WithMany("Attachments")
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Ticket");
+                });
+
             modelBuilder.Entity("SilverSet.Models.Entities.TicketMessage", b =>
                 {
                     b.HasOne("SilverSet.Models.Entities.AppUser", "Sender")
@@ -658,6 +706,8 @@ namespace SilverSet.Migrations
 
             modelBuilder.Entity("SilverSet.Models.Entities.Ticket", b =>
                 {
+                    b.Navigation("Attachments");
+
                     b.Navigation("Messages");
                 });
 #pragma warning restore 612, 618

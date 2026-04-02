@@ -96,10 +96,11 @@
         background: #ef4444;
         color: #fff;
         display: inline-block;
-        max-width: 150px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        line-height: 1.4;
+        word-wrap: break-word;
+        text-align: center;
+        text-transform: uppercase;
+        max-width: 350px;
     }
 
     .btn-action {
@@ -131,6 +132,7 @@
 <div class="admin-container">
     <div class="terminal-card">
         <form method="get" class="row g-3 align-items-end">
+            <input type="hidden" name="view" value="@(Context.Request.Query["view"] == "spam" ? "spam" : "active")" />
             <div class="col-md-3">
                 <label class="filter-label">Search Operative</label>
                 <input type="text" name="searchTerm" class="form-control terminal-input" placeholder="Keyword..." value="@Model.SearchTerm">
@@ -157,114 +159,115 @@
         </form>
     </div>
 
-    <div id="active-tickets-section">
-        <div class="mb-4">
-            <h2 class="text-white fw-900 m-0" style="letter-spacing: 3px; font-size: 1.5rem;">SUPPORT <span style="color: #666;">OPS</span></h2>
-        </div>
-        <div class="table-responsive">
-            <table class="table-terminal">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Operative</th>
-                        <th>Subject</th>
-                        <th>Status</th>
-                        <th class="text-end">Command</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in Model.ActiveTickets)
-                    {
+    @if (Context.Request.Query["view"] != "spam")
+    {
+        <div id="active-tickets-section">
+            <div class="mb-4">
+                <h2 class="text-white fw-900 m-0" style="letter-spacing: 3px; font-size: 1.5rem;">SUPPORT <span style="color: #666;">OPS</span></h2>
+            </div>
+            <div class="table-responsive">
+                <table class="table-terminal">
+                    <thead>
                         <tr>
-                            <td>#@item.Id</td>
-                            <td><div class="text-white fw-bold">@(item.User?.UserName ?? "Unknown")</div></td>
-                            <td>@item.Subject</td>
-                            <td>
-                                <span class="badge-status @(item.IsOpen ? "badge-open" : "badge-closed")">
-                                    @(item.IsOpen ? "ACTIVE" : "ARCHIVED")
-                                </span>
-                            </td>
-                            <td class="text-end">
-                                <a asp-action="Details" asp-route-id="@item.Id" class="btn-action @(item.IsOpen ? "btn-respond" : "btn-view")">
-                                    <i class="bi @(item.IsOpen ? "bi-terminal-fill" : "bi-eye")"></i> @(item.IsOpen ? "RESPOND" : "VIEW")
-                                </a>
-                            </td>
+                            <th>ID</th>
+                            <th>Operative</th>
+                            <th>Subject</th>
+                            <th>Status</th>
+                            <th class="text-end">Command</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.ActiveTickets)
+                        {
+                            <tr>
+                                <td>#@item.Id</td>
+                                <td><div class="text-white fw-bold">@(item.User?.UserName ?? "Unknown")</div></td>
+                                <td>@item.Subject</td>
+                                <td>
+                                    <span class="badge-status @(item.IsOpen ? "badge-open" : "badge-closed")">
+                                        @(item.IsOpen ? "ACTIVE" : "ARCHIVED")
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn-action @(item.IsOpen ? "btn-respond" : "btn-view")">
+                                        <i class="bi @(item.IsOpen ? "bi-terminal-fill" : "bi-eye")"></i> @(item.IsOpen ? "RESPOND" : "VIEW")
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
+    }
+    else
+    {
+        <div id="spam-tickets-section">
+            <div class="mb-4">
+                <h2 class="text-white fw-900 m-0" style="letter-spacing: 3px; font-size: 1.5rem;">SPAM <span style="color: #ef4444;">QUARANTINE</span></h2>
+            </div>
+            <div class="table-responsive">
+                <table class="table-terminal">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Operative</th>
+                            <th>Subject</th>
+                            <th>Status</th>
+                            <th class="text-end">Command</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.SpamTickets)
+                        {
+                            <tr style="opacity: @(item.User?.IsBanned == true ? "0.5" : "0.85");">
+                                <td>#@item.Id</td>
+                                <td>@item.User?.UserName</td>
+                                <td>@item.Subject</td>
+                                <td>
+                                    @if (item.User != null && item.User.IsBanned)
+                                    {
+                                        <span class="badge-status" style="background: #ef4444; color: #fff;">BANNED ARCHIVE</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge-status badge-spam">
+                                            @{
+                                                var rawReason = item.SpamReason ?? "";
+                                                string prefix = "MANUAL";
+                                                string cleanReason = rawReason;
 
-    <div id="spam-tickets-section" style="display: none;">
-        <div class="mb-4">
-            <h2 class="text-white fw-900 m-0" style="letter-spacing: 3px; font-size: 1.5rem;">SPAM <span style="color: #ef4444;">QUARANTINE</span></h2>
+                                                if (rawReason.Contains("Auto-Flag") || rawReason.Contains("Takıldı"))
+                                                {
+                                                    prefix = "FILTERED";
+                                                    cleanReason = rawReason.Replace("Auto-Flag:", "")
+                                                    .Replace("Filtreye Takıldı:", "")
+                                                    .Replace("İçerik:", "")
+                                                    .Trim()
+                                                    .TrimStart(':')
+                                                    .Trim();
+                                                }
+                                                else if (rawReason.Contains("Manual Flag:"))
+                                                {
+                                                    prefix = "MANUAL";
+                                                    cleanReason = rawReason.Replace("Manual Flag:", "").Trim();
+                                                }
+
+                                                @(prefix + " : " + cleanReason.ToUpper())
+                                            }
+                                        </span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn-action @(item.IsOpen ? "btn-respond" : "btn-view")">
+                                        <i class="bi @(item.IsOpen ? "bi-terminal-fill" : "bi-eye")"></i> @(item.IsOpen ? "RESPOND" : "VIEW")
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
-        <div class="table-responsive">
-            <table class="table-terminal">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Operative</th>
-                        <th>Subject</th>
-                        <th>Status</th>
-                        <th class="text-end">Command</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in Model.SpamTickets)
-                    {
-                        <tr style="opacity: @(item.User?.IsBanned == true ? "0.5" : "0.85");">
-                            <td>#@item.Id</td>
-                            <td>@item.User?.UserName</td>
-                            <td>@item.Subject</td>
-                            <td>
-                                @if (item.User != null && item.User.IsBanned)
-                                {
-                                    <span class="badge-status" style="background: #ef4444; color: #fff;">BANNED ARCHIVE</span>
-                                }
-                                else
-                                {
-                                    <span class="badge-status badge-spam" title="@item.SpamReason">FLAGGED: @item.SpamReason</span>
-                                }
-                            </td>
-                            <td class="text-end">
-                                <a asp-action="Details" asp-route-id="@item.Id" class="btn-action @(item.IsOpen ? "btn-respond" : "btn-view")">
-                                    <i class="bi @(item.IsOpen ? "bi-terminal-fill" : "bi-eye")"></i> @(item.IsOpen ? "RESPOND" : "VIEW")
-                                </a>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
+    }
 </div>
-
-@section Scripts {
-    <script>
-        function showTickets(type) {
-            const activeSec = document.getElementById('active-tickets-section');
-            const spamSec = document.getElementById('spam-tickets-section');
-
-            if (type === 'spam') {
-                activeSec.style.display = 'none';
-                spamSec.style.display = 'block';
-            } else {
-                activeSec.style.display = 'block';
-                spamSec.style.display = 'none';
-            }
-        }
-
-        document.addEventListener("DOMContentLoaded", function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const view = urlParams.get('view');
-
-            if (view === 'spam') {
-                showTickets('spam');
-            } else {
-                showTickets('active');
-            }
-        });
-    </script>
-}

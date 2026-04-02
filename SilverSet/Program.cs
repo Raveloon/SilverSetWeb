@@ -48,10 +48,12 @@ public class Program
 
         builder.Services.AddScoped<ProfanityFilterService>();
         builder.Services.AddScoped<BannedUserFilter>();
+        builder.Services.AddScoped<AdminNotificationFilter>();
 
         builder.Services.AddControllersWithViews(options =>
         {
             options.Filters.Add<BannedUserFilter>();
+            options.Filters.Add<AdminNotificationFilter>();
         });
 
         builder.Services.AddSignalR();

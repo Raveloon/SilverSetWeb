@@ -6,11 +6,10 @@ namespace SilverSet.Models.Entities;
 public class TicketMessage
 {
     public int Id { get; set; }
-
     public int TicketId { get; set; }
 
     [Required]
-    public int SenderId { get; set; } // string yerine int oldu ve "= string.Empty" silindi
+    public int SenderId { get; set; } 
 
     [Required]
     public string Content { get; set; } = string.Empty;

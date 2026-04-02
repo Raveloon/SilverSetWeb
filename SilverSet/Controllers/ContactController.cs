@@ -32,7 +32,9 @@ public class ContactController : Controller
             if (int.TryParse(userIdString, out int userId))
             {
                 model.ActiveTicket = await _context.Tickets
+                    .AsNoTracking()
                     .Include(t => t.Messages)
+                    .Include(t => t.Attachments)
                     .FirstOrDefaultAsync(t => t.UserId == userId && t.IsOpen);
 
                 model.ClosedTicketsCount = await _context.Tickets
@@ -48,39 +50,26 @@ public class ContactController : Controller
     [Authorize]
     [EnableRateLimiting("Strict")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> CreateTicket(string subject, string message, string? TerminalAccessCode, [FromForm(Name = "cf-turnstile-response")] string turnstileToken)
+    public async Task<IActionResult> CreateTicket(string subject, string message, List<IFormFile>? attachments, string? TerminalAccessCode, [FromForm(Name = "cf-turnstile-response")] string turnstileToken)
     {
-        if (!string.IsNullOrEmpty(TerminalAccessCode))
-        {
-            return RedirectToAction(nameof(Index));
-        }
+        if (!string.IsNullOrEmpty(TerminalAccessCode)) return RedirectToAction(nameof(Index));
 
         var isTurnstileValid = await _turnstileService.VerifyAsync(turnstileToken);
         if (!isTurnstileValid)
         {
-            TempData["Error"] = "Security verification failed. Please try again.";
+            TempData["Error"] = "Security verification failed.";
             return RedirectToAction(nameof(Index));
         }
 
         var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(userIdString, out int userId))
-        {
-            return RedirectToAction("Login", "Account");
-        }
+        if (!int.TryParse(userIdString, out int userId)) return RedirectToAction("Login", "Account");
 
-        var hasActiveTicket = await _context.Tickets
-            .AsNoTracking()
-            .AnyAsync(t => t.UserId == userId && t.IsOpen);
-
-        if (hasActiveTicket)
-        {
-            TempData["Error"] = "You already have an active support request.";
-            return RedirectToAction(nameof(Index));
-        }
+        var hasActiveTicket = await _context.Tickets.AsNoTracking().AnyAsync(t => t.UserId == userId && t.IsOpen);
+        if (hasActiveTicket) return RedirectToAction(nameof(Index));
 
         if (string.IsNullOrWhiteSpace(subject) || string.IsNullOrWhiteSpace(message))
         {
-            TempData["Error"] = "All fields are required to initialize a ticket.";
+            TempData["Error"] = "Subject and message are required.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -91,6 +80,28 @@ public class ContactController : Controller
             IsOpen = true,
             CreatedAt = DateTime.UtcNow
         };
+
+        if (attachments != null && attachments.Count > 0)
+        {
+            if (attachments.Count > 5)
+            {
+                TempData["Error"] = "Maximum 5 images allowed.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            foreach (var file in attachments)
+            {
+                var fileUrl = await ProcessAttachment(file);
+                if (fileUrl != null)
+                {
+                    ticket.Attachments.Add(new TicketAttachment
+                    {
+                        FileUrl = fileUrl,
+                        UploadedAt = DateTime.UtcNow
+                    });
+                }
+            }
+        }
 
         _context.Tickets.Add(ticket);
         await _context.SaveChangesAsync();
@@ -107,47 +118,33 @@ public class ContactController : Controller
         _context.TicketMessages.Add(firstMessage);
         await _context.SaveChangesAsync();
 
-        TempData["Success"] = "Secure line established. Our team will respond shortly.";
         return RedirectToAction(nameof(Index));
     }
 
+    [HttpPost]
     [Authorize]
-    public async Task<IActionResult> History(int page = 1)
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SendMessage(int ticketId, string content)
     {
         var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(userIdString, out int userId)) return RedirectToAction("Login", "Account");
+        if (!int.TryParse(userIdString, out int userId)) return Unauthorized();
 
-        int pageSize = 10;
-        var query = _context.Tickets.Where(t => t.UserId == userId);
+        var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.Id == ticketId && t.UserId == userId && t.IsOpen);
+        if (ticket == null || string.IsNullOrWhiteSpace(content)) return RedirectToAction(nameof(Index));
 
-        int totalItems = await query.CountAsync();
-        int totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+        var message = new TicketMessage
+        {
+            TicketId = ticketId,
+            SenderId = userId,
+            Content = content.Trim(),
+            IsAdminReply = false,
+            SentAt = DateTime.UtcNow
+        };
 
-        var tickets = await query
-            .OrderByDescending(t => t.IsOpen)
-            .ThenByDescending(t => t.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
+        _context.TicketMessages.Add(message);
+        await _context.SaveChangesAsync();
 
-        ViewBag.CurrentPage = page;
-        ViewBag.TotalPages = totalPages;
-
-        return View(tickets);
-    }
-
-    [Authorize]
-    public async Task<IActionResult> MyTickets()
-    {
-        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(userIdString, out int userId)) return RedirectToAction("Login", "Account");
-
-        var userTickets = await _context.Tickets
-            .Where(t => t.UserId == userId)
-            .OrderByDescending(t => t.CreatedAt)
-            .ToListAsync();
-
-        return View(userTickets);
+        return RedirectToAction(nameof(Index));
     }
 
     [Authorize]
@@ -156,12 +153,54 @@ public class ContactController : Controller
         var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!int.TryParse(userIdString, out int userId)) return RedirectToAction("Login", "Account");
 
+        var activeTicketId = await _context.Tickets
+            .AsNoTracking()
+            .Where(t => t.UserId == userId && t.IsOpen)
+            .Select(t => t.Id)
+            .FirstOrDefaultAsync();
+
+        if (activeTicketId != 0 && activeTicketId != id) return RedirectToAction(nameof(Index));
+
         var ticket = await _context.Tickets
+            .AsNoTracking()
+            .Include(t => t.Attachments)
             .Include(t => t.Messages)
+                .ThenInclude(m => m.Sender)
             .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
 
         if (ticket == null) return NotFound();
 
         return View(ticket);
+    }
+
+    private async Task<string?> ProcessAttachment(IFormFile? file)
+    {
+        if (file == null || file.Length == 0) return null;
+
+        if (file.Length > 10 * 1024 * 1024)
+        {
+            return null;
+        }
+
+        var permittedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+        if (!permittedExtensions.Contains(extension))
+        {
+            return null;
+        }
+
+        var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/tickets");
+        if (!Directory.Exists(uploadPath)) Directory.CreateDirectory(uploadPath);
+
+        var fileName = $"{Guid.NewGuid()}{extension}";
+        var filePath = Path.Combine(uploadPath, fileName);
+
+        using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        return $"/uploads/tickets/{fileName}";
     }
 }

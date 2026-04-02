@@ -143,13 +143,21 @@
                 text-align: center;
             }
 
-        .notification-dot {
-            width: 8px;
-            height: 8px;
+        .notification-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             background-color: #ef4444;
-            border-radius: 50%;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 800;
+            padding: 0 6px;
+            border-radius: 10px;
             margin-left: auto;
-            box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+            min-width: 20px;
+            height: 20px;
+            line-height: 1;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
         }
 
         .sidebar-footer {
@@ -332,19 +340,19 @@
 
             <div class="nav-section-label">SUPPORT</div>
             <a asp-area="Admin" asp-controller="Tickets" asp-action="Index" asp-route-view="active"
-               class="sidebar-link @(ViewBag.ActiveMenu == "Tickets" || (ViewBag.ActiveMenu == null && Context.Request.Query["view"] != "spam" && ViewContext.RouteData.Values["controller"]?.ToString() == "Tickets") ? "active" : "")">
+               class="sidebar-link @(ViewBag.ActiveMenu == "Tickets" ? "active" : "")">
                 <i class="bi bi-ticket-detailed"></i> Support Tickets
-                @if (ViewBag.HasActiveTickets == true)
+                @if (ViewBag.ActiveTicketCount > 0)
                 {
-                    <span class="notification-dot"></span>
+                    <span class="notification-badge">@ViewBag.ActiveTicketCount</span>
                 }
             </a>
             <a asp-area="Admin" asp-controller="Tickets" asp-action="Index" asp-route-view="spam"
-               class="sidebar-link @(ViewBag.ActiveMenu == "Spam" || (ViewBag.ActiveMenu == null && Context.Request.Query["view"] == "spam") ? "active" : "")">
+               class="sidebar-link @(ViewBag.ActiveMenu == "Spam" ? "active" : "")">
                 <i class="bi bi-shield-x"></i> Spam
-                @if (ViewBag.HasActiveSpamTickets == true)
+                @if (ViewBag.SpamTicketCount > 0)
                 {
-                    <span class="notification-dot"></span>
+                    <span class="notification-badge">@ViewBag.SpamTicketCount</span>
                 }
             </a>
 

@@ -1,4 +1,5 @@
-﻿@model SilverSet.Models.Entities.Ticket
+﻿@using SilverSet.Models.Entities
+@model Ticket
 @{
     ViewData["Title"] = "Archived Transmission";
 }
@@ -49,6 +50,38 @@
     }
 
     }
+
+    .evidence-section {
+        padding: 1.5rem;
+        background: rgba(255, 255, 255, 0.02);
+        border-bottom: 1px solid #222;
+    }
+
+    .evidence-gallery {
+        display: flex;
+        gap: 1rem;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+    }
+
+    .evidence-item {
+        flex: 0 0 140px;
+        height: 90px;
+        border-radius: 4px;
+        overflow: hidden;
+        border: 1px solid #333;
+        transition: border-color 0.2s;
+    }
+
+        .evidence-item:hover {
+            border-color: #fff;
+        }
+
+        .evidence-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
 
     .chat-messages {
         padding: 1.5rem;
@@ -187,6 +220,25 @@
                 INITIATED: @Model.CreatedAt.ToLocalTime().ToString("dd.MM.yy HH:mm")
             </div>
         </header>
+
+        @if (Model.Attachments != null && Model.Attachments.Any())
+        {
+            <div class="evidence-section">
+                <div class="mb-2 small text-muted text-uppercase fw-bold" style="letter-spacing: 1.5px; font-size: 0.65rem;">
+                    Initial Evidence Materials (@Model.Attachments.Count)
+                </div>
+                <div class="evidence-gallery">
+                    @foreach (var attachment in Model.Attachments)
+                    {
+                        <div class="evidence-item">
+                            <a href="@attachment.FileUrl" target="_blank">
+                                <img src="@attachment.FileUrl" alt="Transmission Evidence" />
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
 
         <div class="chat-messages">
             @foreach (var msg in Model.Messages.OrderBy(m => m.SentAt))

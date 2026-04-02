@@ -1,6 +1,8 @@
-﻿namespace SilverSet.Models.ViewModels;
+﻿using SilverSet.Models.Entities;
+
+namespace SilverSet.Models.ViewModels;
 public class ContactViewModel
 {
-    public SilverSet.Models.Entities.Ticket? ActiveTicket { get; set; }
+    public Ticket? ActiveTicket { get; set; }
     public int ClosedTicketsCount { get; set; }
 }

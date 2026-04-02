@@ -25,81 +25,80 @@ public class TicketHub : Hub
 
     public async Task JoinTicketGroup(string ticketId)
     {
-        try
+        if (!int.TryParse(ticketId, out int id)) return;
+
+        var user = Context.User;
+        if (user == null) return;
+
+        var isAdmin = user.IsInRole("Admin");
+        var userIdClaim = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdClaim, out int currentUserId)) return;
+
+        var hasAccess = await _context.Tickets
+            .AsNoTracking()
+            .AnyAsync(t => t.Id == id && (isAdmin || t.UserId == currentUserId));
+
+        if (hasAccess)
         {
-            if (!int.TryParse(ticketId, out int id)) return;
-
-            var isAdmin = Context.User!.IsInRole("Admin");
-            var currentUserIdString = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
-            int.TryParse(currentUserIdString, out int currentUserId);
-
-            var hasAccess = await _context.Tickets
-                .AsNoTracking()
-                .AnyAsync(t => t.Id == id && (isAdmin || t.UserId == currentUserId));
-
-            if (hasAccess)
-            {
-                await Groups.AddToGroupAsync(Context.ConnectionId, $"Ticket_{ticketId}");
-            }
-        }
-        catch (Exception)
-        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, $"Ticket_{id}");
         }
     }
 
     public async Task SendMessage(int ticketId, string message)
     {
-        try
+        if (string.IsNullOrWhiteSpace(message)) return;
+
+        var user = Context.User;
+        if (user == null) return;
+
+        var currentUserIdString = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(currentUserIdString, out int currentUserId)) return;
+
+        var isAdmin = user.IsInRole("Admin");
+
+        if (!isAdmin)
         {
-            var isAdmin = Context.User!.IsInRole("Admin");
-            var currentUserIdString = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!int.TryParse(currentUserIdString, out int currentUserId)) return;
-
-            if (!isAdmin)
+            string cacheKey = $"ratelimit_msg_{currentUserId}";
+            if (_cache.TryGetValue(cacheKey, out _))
             {
-                string cacheKey = $"last_msg_{currentUserId}";
-                if (_cache.TryGetValue(cacheKey, out DateTime lastMessageTime))
-                {
-                    if ((DateTime.UtcNow - lastMessageTime).TotalSeconds < 1)
-                    {
-                        await Clients.Caller.SendAsync("ReceiveMessage", "[SİSTEM]: Lütfen mesaj gönderirken biraz bekleyin.", true);
-                        return;
-                    }
-                }
-                _cache.Set(cacheKey, DateTime.UtcNow, TimeSpan.FromSeconds(2));
+                await Clients.Caller.SendAsync("ReceiveMessage", "[SYSTEM]: Please wait before sending another message.", true);
+                return;
             }
-
-            var ticket = await _context.Tickets
-                .FirstOrDefaultAsync(t => t.Id == ticketId && t.IsOpen && (isAdmin || t.UserId == currentUserId));
-
-            if (ticket != null && !string.IsNullOrWhiteSpace(message))
-            {
-                var spamCheck = await _filterService.DetectSpam("", message);
-
-                if (spamCheck.IsSpam)
-                {
-                    ticket.IsSpam = true;
-                    ticket.SpamReason = $"Filtreye Takıldı: {spamCheck.Reason}";
-                    message = await _filterService.FilterText(message);
-                }
-
-                var ticketMessage = new TicketMessage
-                {
-                    TicketId = ticketId,
-                    SenderId = currentUserId,
-                    Content = message.Trim(),
-                    IsAdminReply = isAdmin,
-                    SentAt = DateTime.UtcNow
-                };
-
-                _context.TicketMessages.Add(ticketMessage);
-                await _context.SaveChangesAsync();
-
-                await Clients.Group($"Ticket_{ticketId}").SendAsync("ReceiveMessage", message.Trim(), isAdmin);
-            }
+            _cache.Set(cacheKey, true, TimeSpan.FromSeconds(2));
         }
-        catch (Exception)
+
+        var ticket = await _context.Tickets
+            .FirstOrDefaultAsync(t => t.Id == ticketId && t.IsOpen && (isAdmin || t.UserId == currentUserId));
+
+        if (ticket == null) return;
+
+        var cleanMessage = message.Trim();
+        if (cleanMessage.Length > 500)
         {
+            cleanMessage = cleanMessage.Substring(0, 500);
         }
+
+        var spamCheck = await _filterService.DetectSpam("", cleanMessage);
+
+        if (spamCheck.IsSpam)
+        {
+            ticket.IsSpam = true;
+            ticket.SpamReason = $"Auto-Flag: {spamCheck.Reason}";
+            cleanMessage = await _filterService.FilterText(cleanMessage);
+        }
+
+        var ticketMessage = new TicketMessage
+        {
+            TicketId = ticketId,
+            SenderId = currentUserId,
+            Content = cleanMessage,
+            IsAdminReply = isAdmin,
+            SentAt = DateTime.UtcNow
+        };
+
+        _context.TicketMessages.Add(ticketMessage);
+        await _context.SaveChangesAsync();
+
+        await Clients.Group($"Ticket_{ticketId}").SendAsync("ReceiveMessage", cleanMessage, isAdmin);
     }
 }

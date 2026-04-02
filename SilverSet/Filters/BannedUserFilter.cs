@@ -18,24 +18,18 @@ public class BannedUserFilter : IAsyncActionFilter
 
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
-        // Eğer bir kullanıcı sisteme giriş yapmışsa...
         if (context.HttpContext.User.Identity?.IsAuthenticated == true)
         {
             var user = await _userManager.GetUserAsync(context.HttpContext.User);
 
-            // Veritabanından adamı bulup banlı olup olmadığına bakıyoruz.
             if (user != null && user.IsBanned)
             {
-                // Banlıysa anında oturumunu (Cookie) imha et
                 await _signInManager.SignOutAsync();
-
-                // Ve onu Login sayfasına şutla
                 context.Result = new RedirectToActionResult("Login", "Account", new { area = "" });
-                return; // Kodun aşağıya inmesini ve sayfayı yüklemesini engelle
+                return;
             }
         }
 
-        // Temizse devam etsin
         await next();
     }
 }
