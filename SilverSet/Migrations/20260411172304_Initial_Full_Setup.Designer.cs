@@ -12,8 +12,8 @@ using SilverSet.Data;
 namespace SilverSet.Migrations
 {
     [DbContext(typeof(SilverSetContext))]
-    [Migration("20260326092114_AddBanFields")]
-    partial class AddBanFields
+    [Migration("20260411172304_Initial_Full_Setup")]
+    partial class Initial_Full_Setup
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -279,6 +279,128 @@ namespace SilverSet.Migrations
                     b.ToTable("Assets");
                 });
 
+            modelBuilder.Entity("SilverSet.Models.Entities.BadWord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Word")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Word")
+                        .IsUnique();
+
+                    b.ToTable("BadWords");
+                });
+
+            modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumCategory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ForumCategories");
+                });
+
+            modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumPost", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("TopicId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TopicId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ForumPosts");
+                });
+
+            modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumTopic", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsLocked")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPinned")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ViewCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ForumTopics");
+                });
+
             modelBuilder.Entity("SilverSet.Models.Entities.PasswordResetLog", b =>
                 {
                     b.Property<int>("Id")
@@ -327,6 +449,13 @@ namespace SilverSet.Migrations
                     b.Property<bool>("IsOpen")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsSpam")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SpamReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("Subject")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -337,9 +466,40 @@ namespace SilverSet.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("IsOpen");
+
+                    b.HasIndex("IsSpam");
+
                     b.HasIndex("UserId");
 
                     b.ToTable("Tickets");
+                });
+
+            modelBuilder.Entity("SilverSet.Models.Entities.TicketAttachment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("FileUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TicketId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TicketId");
+
+                    b.ToTable("TicketAttachment");
                 });
 
             modelBuilder.Entity("SilverSet.Models.Entities.TicketMessage", b =>
@@ -369,6 +529,8 @@ namespace SilverSet.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("SenderId");
+
+                    b.HasIndex("SentAt");
 
                     b.HasIndex("TicketId");
 
@@ -456,6 +618,44 @@ namespace SilverSet.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumPost", b =>
+                {
+                    b.HasOne("SilverSet.Models.Entities.Forum.ForumTopic", "Topic")
+                        .WithMany("Posts")
+                        .HasForeignKey("TopicId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SilverSet.Models.Entities.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Topic");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumTopic", b =>
+                {
+                    b.HasOne("SilverSet.Models.Entities.Forum.ForumCategory", "Category")
+                        .WithMany("Topics")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SilverSet.Models.Entities.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SilverSet.Models.Entities.Ticket", b =>
                 {
                     b.HasOne("SilverSet.Models.Entities.AppUser", "User")
@@ -465,6 +665,17 @@ namespace SilverSet.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SilverSet.Models.Entities.TicketAttachment", b =>
+                {
+                    b.HasOne("SilverSet.Models.Entities.Ticket", "Ticket")
+                        .WithMany("Attachments")
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Ticket");
                 });
 
             modelBuilder.Entity("SilverSet.Models.Entities.TicketMessage", b =>
@@ -486,8 +697,20 @@ namespace SilverSet.Migrations
                     b.Navigation("Ticket");
                 });
 
+            modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumCategory", b =>
+                {
+                    b.Navigation("Topics");
+                });
+
+            modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumTopic", b =>
+                {
+                    b.Navigation("Posts");
+                });
+
             modelBuilder.Entity("SilverSet.Models.Entities.Ticket", b =>
                 {
+                    b.Navigation("Attachments");
+
                     b.Navigation("Messages");
                 });
 #pragma warning restore 612, 618

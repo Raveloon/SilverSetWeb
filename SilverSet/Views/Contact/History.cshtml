@@ -38,38 +38,6 @@
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
 
-    .pagination-terminal {
-        display: flex;
-        gap: 0.5rem;
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-
-        .pagination-terminal .page-link {
-            background: transparent;
-            color: #888;
-            border: 1px solid #333;
-            border-radius: 4px;
-            padding: 0.5rem 1rem;
-            font-size: 0.75rem;
-            font-weight: 800;
-            transition: all 0.2s;
-            text-decoration: none;
-        }
-
-        .pagination-terminal .page-item.active .page-link {
-            background: #fff;
-            color: #000;
-            border-color: #fff;
-        }
-
-        .pagination-terminal .page-link:hover:not(.active) {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            border-color: #555;
-        }
-
     .table-terminal {
         width: 100%;
         color: #999;
@@ -137,6 +105,12 @@
         border: 1px solid #333;
     }
 
+    .badge-quarantined {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+        border: 1px solid #ef4444;
+    }
+
     .btn-view {
         background: transparent;
         color: #fff;
@@ -199,12 +173,6 @@
                 font-size: 0.65rem;
                 text-transform: uppercase;
             }
-
-            .table-terminal td:last-child {
-                border-bottom: 1px solid #333;
-                text-align: center;
-                padding: 1.5rem 1rem;
-            }
     }
 </style>
 
@@ -248,7 +216,11 @@
                                 <td data-label="Subject" style="color: #ccc;">@item.Subject</td>
                                 <td data-label="Initiated" class="small">@item.CreatedAt.ToLocalTime().ToString("dd.MM.yy HH:mm")</td>
                                 <td data-label="Status">
-                                    @if (item.IsOpen)
+                                    @if (item.IsSpam && User.IsInRole("Admin"))
+                                    {
+                                        <span class="badge-status badge-quarantined">QUARANTINED</span>
+                                    }
+                                    else if (item.IsOpen)
                                     {
                                         <span class="badge-status badge-open">ACTIVE</span>
                                     }
@@ -267,20 +239,6 @@
                     </tbody>
                 </table>
             </div>
-
-            @if (ViewBag.TotalPages > 1)
-            {
-                <nav class="d-flex justify-content-center mt-4 mb-2">
-                    <ul class="pagination-terminal">
-                        @for (int i = 1; i <= ViewBag.TotalPages; i++)
-                        {
-                            <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
-                                <a class="page-link" href="?page=@i">@i</a>
-                            </li>
-                        }
-                    </ul>
-                </nav>
-            }
         }
     </div>
 </main>

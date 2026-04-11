@@ -13,12 +13,9 @@
     }
 
     @@media (min-width: 768px) {
-        .history-wrapper
-
-    {
-        padding: 4rem 0;
-    }
-
+        .history-wrapper {
+            padding: 4rem 0;
+        }
     }
 
     .chat-container {
@@ -33,7 +30,6 @@
 
     .chat-header {
         padding: 1.2rem 1.5rem;
-        background: transparent;
         border-bottom: 1px solid #333;
         display: flex;
         flex-direction: column;
@@ -41,14 +37,11 @@
     }
 
     @@media (min-width: 576px) {
-        .chat-header
-
-    {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-    }
-
+        .chat-header {
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+        }
     }
 
     .evidence-section {
@@ -70,12 +63,7 @@
         border-radius: 4px;
         overflow: hidden;
         border: 1px solid #333;
-        transition: border-color 0.2s;
     }
-
-        .evidence-item:hover {
-            border-color: #fff;
-        }
 
         .evidence-item img {
             width: 100%;
@@ -90,28 +78,6 @@
         gap: 1.2rem;
         max-height: 60vh;
         overflow-y: auto;
-    }
-
-    @@media (min-width: 768px) {
-        .chat-messages
-
-    {
-        padding: 2rem;
-    }
-
-    }
-
-    .chat-messages::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .chat-messages::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.05);
-    }
-
-    .chat-messages::-webkit-scrollbar-thumb {
-        background: #444;
-        border-radius: 4px;
     }
 
     .msg-bubble {
@@ -153,9 +119,9 @@
     }
 
     .archived-banner {
-        background: rgba(248, 113, 113, 0.05);
-        border-top: 1px solid rgba(248, 113, 113, 0.2);
-        color: #f87171;
+        background: rgba(255, 255, 255, 0.02);
+        border-top: 1px solid #222;
+        color: #666;
         padding: 1.2rem;
         text-align: center;
         font-weight: 700;
@@ -192,10 +158,6 @@
         justify-content: center;
         width: 100%;
     }
-
-        .btn-return:hover {
-            color: #fff;
-        }
 </style>
 
 <main class="container history-wrapper">
@@ -205,7 +167,7 @@
     </div>
 
     <div class="chat-container">
-        @if (Model.IsSpam)
+        @if (Model.IsSpam && User.IsInRole("Admin"))
         {
             <div class="quarantine-header">
                 <i class="bi bi-shield-slash me-2"></i> SECURITY BREACH DETECTED: TRANSMISSION QUARANTINED
@@ -224,9 +186,6 @@
         @if (Model.Attachments != null && Model.Attachments.Any())
         {
             <div class="evidence-section">
-                <div class="mb-2 small text-muted text-uppercase fw-bold" style="letter-spacing: 1.5px; font-size: 0.65rem;">
-                    Initial Evidence Materials (@Model.Attachments.Count)
-                </div>
                 <div class="evidence-gallery">
                     @foreach (var attachment in Model.Attachments)
                     {
@@ -243,20 +202,30 @@
         <div class="chat-messages">
             @foreach (var msg in Model.Messages.OrderBy(m => m.SentAt))
             {
-                if (msg.Content.StartsWith("[CLOSED]") ||
-                msg.Content.StartsWith("[RE-OPENED]") ||
-                msg.Content.StartsWith("[BANNED]") ||
-                msg.Content.StartsWith("[FLAGGED]") ||
-                msg.Content.StartsWith("[RESTORED]"))
+                var content = msg.Content ?? "";
+                bool isSystem = content.StartsWith("[CLOSED]") || content.StartsWith("[RE-OPENED]") ||
+                content.StartsWith("[BANNED]") || content.StartsWith("[FLAGGED]") ||
+                content.StartsWith("[RESTORED]");
+
+                if (isSystem)
                 {
-                    <div class="msg-system" style="@(msg.Content.Contains("[BANNED]") || msg.Content.Contains("[FLAGGED]") ? "color:#ef4444; border-color:#ef4444;" : msg.Content.Contains("[RESTORED]") ? "color:#10b981; border-color:#10b981;" : "")">
-                        <i class="bi bi-info-circle me-1"></i> @msg.Content
-                    </div>
+                    if (User.IsInRole("Admin"))
+                    {
+                        <div class="msg-system" style="@(content.Contains("[BANNED]") || content.Contains("[FLAGGED]") ? "color:#ef4444; border-color:#ef4444;" : content.Contains("[RESTORED]") ? "color:#10b981; border-color:#10b981;" : "")">
+                            <i class="bi bi-info-circle me-1"></i> @content
+                        </div>
+                    }
+                    else if (content.StartsWith("[CLOSED]"))
+                    {
+                        <div class="msg-system">
+                            <i class="bi bi-info-circle me-1"></i> TRANSMISSION ARCHIVED
+                        </div>
+                    }
                 }
                 else
                 {
                     <div class="msg-bubble @(msg.IsAdminReply ? "msg-admin" : "msg-user")">
-                        @msg.Content
+                        @(User.IsInRole("Admin") ? content : content.Replace("[FLAGGED]", "").Trim())
                     </div>
                 }
             }
@@ -264,11 +233,11 @@
 
         @if (!Model.IsOpen)
         {
-            <div class="archived-banner" style="@(Model.User?.IsBanned == true ? "color: #ef4444; border-color: rgba(239, 68, 68, 0.2);" : "")">
-                @if (Model.User?.IsBanned == true)
+            <div class="archived-banner">
+                @if (Model.User?.IsBanned == true && User.IsInRole("Admin"))
                 {
-                    <i class="bi bi-person-x-fill me-2"></i>
-                    <span>OPERATIVE TERMINATED. ACCESS PERMANENTLY REVOKED.</span>
+                    <i class="bi bi-person-x-fill me-2" style="color: #ef4444;"></i>
+                    <span style="color: #ef4444;">OPERATIVE TERMINATED. ACCESS PERMANENTLY REVOKED.</span>
                 }
                 else
                 {

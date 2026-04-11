@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <Folder Include="Areas\Admin\Models\Entities\" />
+    <Folder Include="Migrations\" />
     <Folder Include="wwwroot\Data\" />
   </ItemGroup>
 
