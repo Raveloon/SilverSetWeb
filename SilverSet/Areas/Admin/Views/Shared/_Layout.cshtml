@@ -367,9 +367,9 @@
             </a>
 
             <div class="nav-section-label">Community</div>
-            <a href="#" class="sidebar-link">
-                <i class="bi bi-chat-square-text"></i> Forum
-                <span style="margin-left:auto; font-size:0.6rem; background:rgba(255,255,255,0.1); padding:0.1rem 0.4rem; border-radius:4px; color:#666">Soon</span>
+            <a asp-area="Admin" asp-controller="Forum" asp-action="Settings"
+               class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Forum" ? "active" : "")">
+                <i class="bi bi-chat-square-text"></i> Forum Control
             </a>
         </nav>
 
@@ -397,7 +397,7 @@
                 </div>
 
                 <div class="topbar-user" style="gap: 1.5rem;">
-                    <span id="live-top-clock" class="d-none d-sm-inline" style="color: white; font-weight: 700; font-size: 1.1rem; letter-spacing: 0.5px; font-family: 'Courier New', Courier, monospace;">
+                    <span id="live-top-clock" class="topbar-clock d-none d-sm-inline" style="color: white; font-weight: 700; font-size: 1.1rem; letter-spacing: 0.5px; font-family: 'Courier New', Courier, monospace;">
                         @DateTime.Now.ToString("HH:mm")
                     </span>
                     <div style="display: flex; align-items: center; gap: 0.6rem;">

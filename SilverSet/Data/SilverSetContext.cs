@@ -20,6 +20,7 @@ public class SilverSetContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<ForumTopic> ForumTopics { get; set; }
     public DbSet<ForumPost> ForumPosts { get; set; }
     public DbSet<BadWord> BadWords { get; set; }
+    public DbSet<GlobalSetting> GlobalSettings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -73,6 +74,16 @@ public class SilverSetContext : IdentityDbContext<AppUser, AppRole, int>
                 .WithMany()
                 .HasForeignKey(p => p.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(p => p.ParentPost)
+                .WithMany(p => p.Replies)
+                .HasForeignKey(p => p.ParentPostId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<GlobalSetting>(entity =>
+        {
+            entity.HasIndex(s => s.Key).IsUnique();
         });
     }
 }

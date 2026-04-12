@@ -1,0 +1,155 @@
+﻿@model SilverSet.Areas.Admin.Models.ForumSettingsViewModel
+@{
+    ViewData["Title"] = "Forum Configuration";
+}
+
+<style>
+    .admin-card {
+        background: rgba(15, 15, 15, 0.9);
+        border: 1px solid #222;
+        border-radius: 8px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .config-title {
+        color: #fff;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid #333;
+        padding-bottom: 1rem;
+    }
+
+    .form-label-custom {
+        color: #666;
+        font-size: 0.7rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .form-control-terminal {
+        background: #000 !important;
+        border: 1px solid #333 !important;
+        color: #fff !important;
+        padding: 0.8rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+
+        .form-control-terminal:focus {
+            border-color: #fff !important;
+            box-shadow: 0 0 10px rgba(255,255,255,0.1) !important;
+        }
+
+    .status-switch {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        background: rgba(255,255,255,0.02);
+        padding: 1.5rem;
+        border-radius: 4px;
+        border: 1px solid #222;
+        margin-bottom: 2rem;
+    }
+
+    .btn-update {
+        background: #fff;
+        color: #000;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        padding: 1rem 2rem;
+        border: none;
+        border-radius: 4px;
+        transition: 0.2s;
+        cursor: pointer;
+        width: 100%;
+    }
+
+        .btn-update:hover {
+            background: #ccc;
+            transform: translateY(-2px);
+        }
+
+    .helper-text {
+        color: #444;
+        font-size: 0.65rem;
+        margin-top: 0.4rem;
+        font-weight: 600;
+    }
+
+    .alert-terminal {
+        background: rgba(0, 0, 0, 0.3);
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        border-radius: 4px;
+        border-width: 1px;
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="admin-card">
+                <h2 class="config-title">FORUM CONTROL UNIT</h2>
+
+                @if (TempData["Success"] != null)
+                {
+                    <div class="alert alert-success alert-terminal border-success text-success mb-4">
+                        <i class="bi bi-check-circle me-2"></i> @TempData["Success"]
+                    </div>
+                }
+                @if (TempData["Error"] != null)
+                {
+                    <div class="alert alert-danger alert-terminal border-danger text-danger mb-4">
+                        <i class="bi bi-exclamation-octagon me-2"></i> @TempData["Error"]
+                    </div>
+                }
+                @if (TempData["Info"] != null)
+                {
+                    <div class="alert alert-warning alert-terminal border-warning text-warning mb-4">
+                        <i class="bi bi-info-circle me-2"></i> @TempData["Info"]
+                    </div>
+                }
+
+                <form asp-action="UpdateSettings" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="status-switch">
+                        <div class="form-check form-switch m-0">
+                            <input class="form-check-input" type="checkbox" asp-for="IsForumActive"
+                                   style="width: 3em; height: 1.5em; cursor: pointer;">
+                        </div>
+                        <div>
+                            <label class="form-label-custom m-0">Global Forum Status</label>
+                            <p class="helper-text m-0">If disabled, all forum access will be redirected to the maintenance terminal.</p>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label-custom">New Member Restriction</label>
+                            <input type="text" asp-for="PostRestrictionTime" class="form-control form-control-terminal"
+                                   placeholder="e.g. 24h, 30m"
+                                   oninput="this.value = this.value.replace(/[^0-9hmHM]/g, '')">
+                            <p class="helper-text">Use 'h' for hours, 'm' for minutes. '0' to disable.</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-custom">Shadow Post Threshold</label>
+                            <input type="number" asp-for="ShadowPostLimit" class="form-control form-control-terminal">
+                            <p class="helper-text">Messages before auto-approval. '0' to approve all.</p>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-update">INITIALIZE UPDATE</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -49,7 +49,9 @@ public class Program
         builder.Services.AddScoped<ProfanityFilterService>();
         builder.Services.AddScoped<BannedUserFilter>();
         builder.Services.AddScoped<AdminNotificationFilter>();
+        builder.Services.AddScoped<ForumSettingsService>();
 
+        builder.Services.AddScoped<ForumAccessFilter>();
         builder.Services.AddControllersWithViews(options =>
         {
             options.Filters.Add<BannedUserFilter>();
@@ -123,9 +125,20 @@ public class Program
             var services = scope.ServiceProvider;
             try
             {
+                var context = services.GetRequiredService<SilverSetContext>();
                 var userManager = services.GetRequiredService<UserManager<AppUser>>();
                 var roleManager = services.GetRequiredService<RoleManager<AppRole>>();
                 var configuration = services.GetRequiredService<IConfiguration>();
+
+                if (!await context.GlobalSettings.AnyAsync())
+                {
+                    context.GlobalSettings.AddRange(
+                        new GlobalSetting { Key = "ForumStatus", Value = "true", Description = "Forumun genel eriþim durumu" },
+                        new GlobalSetting { Key = "ForumPostDelay", Value = "24h", Description = "Yeni üyeler için bekleme süresi (h: saat, m: dakika)" },
+                        new GlobalSetting { Key = "ForumApprovalThreshold", Value = "5", Description = "Otomatik onay için gereken mesaj sayýsý" }
+                    );
+                    await context.SaveChangesAsync();
+                }
 
                 string? adminRole = configuration["AdminSetup:AdminRole"];
                 string? adminName = configuration["AdminSetup:AdminName"];

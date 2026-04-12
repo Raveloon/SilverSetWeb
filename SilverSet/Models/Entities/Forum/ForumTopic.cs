@@ -1,13 +1,25 @@
-﻿namespace SilverSet.Models.Entities.Forum;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace SilverSet.Models.Entities.Forum;
 
 public class ForumTopic
 {
     public int Id { get; set; }
+
+    [Required, StringLength(200)]
     public string Title { get; set; } = null!;
+
+    [Required]
     public string Content { get; set; } = null!;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
     public bool IsLocked { get; set; } = false;
+
     public bool IsPinned { get; set; } = false;
+
+    public bool IsApproved { get; set; } = false;
+
     public int ViewCount { get; set; }
 
     public int CategoryId { get; set; }

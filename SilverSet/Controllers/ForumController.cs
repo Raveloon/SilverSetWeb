@@ -5,9 +5,11 @@ using Microsoft.EntityFrameworkCore;
 using SilverSet.Data;
 using SilverSet.Models.Entities;
 using SilverSet.Models.Entities.Forum;
+using SilverSet.Filters;
 
 namespace SilverSet.Controllers;
 
+[ServiceFilter(typeof(ForumAccessFilter))]
 public class ForumController : Controller
 {
     private readonly SilverSetContext _context;
@@ -59,12 +61,12 @@ public class ForumController : Controller
 
         return View(topics);
     }
+
     [HttpPost]
     [Authorize]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateTopic(int categoryId, string title, string content, string? honeyPot)
     {
-        
         if (!string.IsNullOrEmpty(honeyPot)) return Ok();
 
         if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(content))
@@ -112,6 +114,7 @@ public class ForumController : Controller
 
         return RedirectToAction(nameof(Topic), new { id = topicId });
     }
+
     public async Task<IActionResult> Topic(int id, int page = 1)
     {
         int pageSize = 10;
@@ -148,6 +151,11 @@ public class ForumController : Controller
     public IActionResult CreateTopic(int categoryId)
     {
         ViewBag.CategoryId = categoryId;
+        return View();
+    }
+
+    public IActionResult Maintenance()
+    {
         return View();
     }
 }

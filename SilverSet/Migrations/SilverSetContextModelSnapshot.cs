@@ -308,7 +308,8 @@ namespace SilverSet.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<int>("DisplayOrder")
                         .HasColumnType("int");
@@ -318,7 +319,8 @@ namespace SilverSet.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
@@ -340,6 +342,12 @@ namespace SilverSet.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("ParentPostId")
+                        .HasColumnType("int");
+
                     b.Property<int>("TopicId")
                         .HasColumnType("int");
 
@@ -347,6 +355,8 @@ namespace SilverSet.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ParentPostId");
 
                     b.HasIndex("TopicId");
 
@@ -373,6 +383,9 @@ namespace SilverSet.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsLocked")
                         .HasColumnType("bit");
 
@@ -381,7 +394,8 @@ namespace SilverSet.Migrations
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
@@ -396,6 +410,34 @@ namespace SilverSet.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("ForumTopics");
+                });
+
+            modelBuilder.Entity("SilverSet.Models.Entities.GlobalSetting", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("GlobalSettings");
                 });
 
             modelBuilder.Entity("SilverSet.Models.Entities.PasswordResetLog", b =>
@@ -617,6 +659,11 @@ namespace SilverSet.Migrations
 
             modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumPost", b =>
                 {
+                    b.HasOne("SilverSet.Models.Entities.Forum.ForumPost", "ParentPost")
+                        .WithMany("Replies")
+                        .HasForeignKey("ParentPostId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("SilverSet.Models.Entities.Forum.ForumTopic", "Topic")
                         .WithMany("Posts")
                         .HasForeignKey("TopicId")
@@ -628,6 +675,8 @@ namespace SilverSet.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("ParentPost");
 
                     b.Navigation("Topic");
 
@@ -697,6 +746,11 @@ namespace SilverSet.Migrations
             modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumCategory", b =>
                 {
                     b.Navigation("Topics");
+                });
+
+            modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumPost", b =>
+                {
+                    b.Navigation("Replies");
                 });
 
             modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumTopic", b =>
