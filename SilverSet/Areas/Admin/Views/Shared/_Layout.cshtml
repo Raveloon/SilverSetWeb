@@ -1,4 +1,15 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.EntityFrameworkCore
+@inject SilverSet.Data.SilverSetContext _context
+@{
+    // Forum Onay Bekleyenler
+    var pTopics = _context.ForumTopics.Count(t => !t.IsApproved);
+    var pPosts = _context.ForumPosts.Count(p => !p.IsApproved);
+
+    // Ticket Sayıları (DbSet ismini 'Tickets' olarak düzelttim)
+    var activeTicketCount = _context.Tickets.Count(t => t.IsOpen && !t.IsSpam);
+    var spamTicketCount = _context.Tickets.Count(t => t.IsOpen && t.IsSpam);
+}
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -143,21 +154,36 @@
                 text-align: center;
             }
 
+        /* BADGE TASARIMLARI */
+        .badge-group {
+            display: flex;
+            gap: 5px;
+            margin-left: auto;
+            align-items: center;
+        }
+
         .notification-badge {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            background-color: #ef4444;
             color: white;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: 800;
             padding: 0 6px;
             border-radius: 10px;
-            margin-left: auto;
             min-width: 20px;
             height: 20px;
             line-height: 1;
+        }
+
+        .badge-red {
+            background-color: #ef4444;
             box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+        }
+
+        .badge-orange {
+            background-color: #f59e0b;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
         }
 
         .sidebar-footer {
@@ -340,19 +366,19 @@
 
             <div class="nav-section-label">SUPPORT</div>
             <a asp-area="Admin" asp-controller="Tickets" asp-action="Index" asp-route-view="active"
-               class="sidebar-link @(ViewBag.ActiveMenu == "Tickets" ? "active" : "")">
+               class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tickets" && (string)ViewContext.RouteData.Values["action"] == "Index" ? "active" : "")">
                 <i class="bi bi-ticket-detailed"></i> Support Tickets
-                @if (ViewBag.ActiveTicketCount > 0)
+                @if (activeTicketCount > 0)
                 {
-                    <span class="notification-badge">@ViewBag.ActiveTicketCount</span>
+                    <span class="notification-badge badge-red">@activeTicketCount</span>
                 }
             </a>
             <a asp-area="Admin" asp-controller="Tickets" asp-action="Index" asp-route-view="spam"
-               class="sidebar-link @(ViewBag.ActiveMenu == "Spam" ? "active" : "")">
+               class="sidebar-link">
                 <i class="bi bi-shield-x"></i> Spam
-                @if (ViewBag.SpamTicketCount > 0)
+                @if (spamTicketCount > 0)
                 {
-                    <span class="notification-badge">@ViewBag.SpamTicketCount</span>
+                    <span class="notification-badge badge-red">@spamTicketCount</span>
                 }
             </a>
 
@@ -368,8 +394,29 @@
 
             <div class="nav-section-label">Community</div>
             <a asp-area="Admin" asp-controller="Forum" asp-action="Settings"
-               class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Forum" ? "active" : "")">
-                <i class="bi bi-chat-square-text"></i> Forum Control
+               class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Forum" && ViewContext.RouteData.Values["action"]?.ToString() == "Settings" ? "active" : "")">
+                <i class="bi bi-gear-wide-connected"></i> Forum Control
+            </a>
+            <a asp-area="Admin" asp-controller="Forum" asp-action="Categories"
+               class="sidebar-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Categories" ? "active" : "")">
+                <i class="bi bi-tags"></i> Categories
+            </a>
+            <a asp-area="Admin" asp-controller="Forum" asp-action="PendingApprovals"
+               class="sidebar-link @(ViewContext.RouteData.Values["action"]?.ToString() == "PendingApprovals" ? "active" : "")">
+                <i class="bi bi-shield-exclamation"></i> Approvals
+                @if (pTopics > 0 || pPosts > 0)
+                {
+                    <div class="badge-group">
+                        @if (pTopics > 0)
+                        {
+                            <span class="notification-badge badge-orange" title="Pending Topics">@pTopics</span>
+                        }
+                        @if (pPosts > 0)
+                        {
+                            <span class="notification-badge badge-red" title="Pending Posts">@pPosts</span>
+                        }
+                    </div>
+                }
             </a>
         </nav>
 
@@ -392,7 +439,7 @@
                         </svg>
                     </button>
                     <span class="topbar-title" style="letter-spacing: 1px; color: #777; text-transform: uppercase; font-size: 0.7rem;">
-                        DashBoard Terminal
+                        Management Console
                     </span>
                 </div>
 

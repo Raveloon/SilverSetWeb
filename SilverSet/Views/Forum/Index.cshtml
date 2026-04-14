@@ -1,99 +1,268 @@
-﻿@model IEnumerable<SilverSet.Models.Entities.Forum.ForumCategory>
+﻿@using SilverSet.Models.Entities.Forum
+@model IEnumerable<ForumCategory>
 @{
-    ViewData["Title"] = "Forum Terminal";
+    ViewData["Title"] = "Community";
+    bool isSearch = ViewBag.IsSearch ?? false;
+    var query = ViewBag.Query as string;
+    var availableLetters = ViewBag.AvailableLetters as List<char>;
+    var selectedFilter = ViewBag.SelectedFilter as string;
+    int currentPage = ViewBag.CurrentPage;
+    int totalPages = ViewBag.TotalPages;
 }
 
 <style>
+    body {
+        background-color: #050505;
+    }
+
     .forum-container {
         padding: 2rem 0;
     }
 
-    .bbs-header {
-        border-bottom: 2px solid #222;
-        padding-bottom: 1rem;
-        margin-bottom: 2rem;
+    .search-input-silver {
+        background: #000 !important;
+        border: 1px solid #222 !important;
+        color: #fff !important;
+        border-radius: 4px 0 0 4px;
+        font-size: 0.8rem;
+        padding: 0.5rem 0.8rem;
     }
 
-    .bbs-title {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 1.5rem;
-        font-weight: 800;
-        color: white;
-        letter-spacing: 2px;
-    }
-
-    .category-card {
-        background: rgba(10, 10, 10, 0.6);
-        border: 1px solid #1a1a1a;
-        border-left: 4px solid var(--admin-border);
-        padding: 1.5rem;
-        margin-bottom: 1rem;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        display: block;
-    }
-
-        .category-card:hover {
-            background: rgba(20, 20, 20, 0.8);
-            border-left-color: white;
-            transform: translateX(5px);
+        .search-input-silver:focus {
+            border-color: #444 !important;
+            box-shadow: none;
         }
 
-    .cat-name {
-        color: white;
-        font-size: 1.1rem;
+    .btn-search-silver {
+        background: #222 !important;
+        border: 1px solid #333 !important;
+        color: #888 !important;
+        border-radius: 0 4px 4px 0;
+        font-size: 0.7rem;
         font-weight: 700;
-        margin-bottom: 0.3rem;
-        display: block;
-    }
-
-    .cat-desc {
-        color: #666;
-        font-size: 0.85rem;
-        margin-bottom: 0;
-    }
-
-    .cat-stats {
-        display: flex;
-        gap: 2rem;
-        margin-top: 1rem;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.75rem;
-        color: #444;
+        padding: 0 1.2rem;
+        transition: 0.2s;
         text-transform: uppercase;
     }
 
-    .stat-value {
-        color: #999;
-        font-weight: bold;
+        .btn-search-silver:hover {
+            background: #333 !important;
+            color: #fff !important;
+        }
+
+    .filter-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #151515;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .alphabet-list {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .filter-btn {
+        background: #0d0d0d;
+        border: 1px solid #1a1a1a;
+        color: #555;
+        padding: 6px 14px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-decoration: none;
+        border-radius: 4px;
+        transition: 0.2s;
+    }
+
+        .filter-btn:hover, .filter-btn.active {
+            border-color: #444;
+            color: #e0e0e0;
+            background: #151515;
+        }
+
+    .all-sectors-btn {
+        background: #e0e0e0;
+        color: #000;
+        border: none;
+        margin-left: auto;
+    }
+
+        .all-sectors-btn:hover, .all-sectors-btn.active {
+            background: #fff;
+            color: #000;
+        }
+
+    .category-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1rem;
+    }
+
+    .category-link-card {
+        background: #0d0d0d;
+        border: 1px solid #1a1a1a;
+        padding: 1rem 1.5rem;
+        border-radius: 4px;
+        text-decoration: none !important;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: 0.2s ease-in-out;
+        min-height: 60px;
+    }
+
+        .category-link-card:hover {
+            background: #111;
+            border-color: #333;
+            transform: translateY(-2px);
+        }
+
+    .category-name-text {
+        color: #eee;
+        font-weight: 700;
+        font-size: 1rem;
+        letter-spacing: 0.5px;
+        word-break: break-all;
+        flex: 1;
+        margin-right: 15px;
+    }
+
+    .category-link-card:hover .category-name-text {
+        color: #fff;
+    }
+
+    .message-count-pill {
+        background: #161616;
+        color: #666;
+        font-size: 0.7rem;
+        font-weight: 800;
+        padding: 2px 10px;
+        border-radius: 20px;
+        border: 1px solid #222;
+        transition: 0.2s;
+        flex-shrink: 0;
+    }
+
+    .category-link-card:hover .message-count-pill {
+        color: #00a8ff;
+        border-color: #00a8ff;
+    }
+
+    .pagination-bar {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 3rem;
+    }
+
+    .page-link-silver {
+        background: #0d0d0d;
+        border: 1px solid #1a1a1a;
+        color: #555;
+        padding: 6px 14px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-decoration: none;
+        border-radius: 4px;
+        transition: 0.2s;
+    }
+
+        .page-link-silver:hover, .page-link-silver.active {
+            border-color: #444;
+            color: #fff;
+            background: #151515;
+        }
+
+    @@media (max-width: 576px) {
+        .all-sectors-btn
+
+    {
+        margin-left: 0;
+        width: 100%;
+        text-align: center;
+    }
+
     }
 </style>
 
-<div class="container forum-container">
-    <div class="bbs-header d-flex justify-content-between align-items-center">
-        <div class="bbs-title">> SILVERSET_BBS_v1.0</div>
-        <div class="text-muted small">@DateTime.Now.ToString("yyyy-MM-dd HH:mm")</div>
-    </div>
+<div class="forum-container">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-end mb-5">
+            <div>
+                <h1 class="text-white mb-1" style="font-weight: 800; font-size: 2.5rem;">@(isSearch ? "Search Results" : "Forum")</h1>
+                <p style="color: #444; font-size: 0.85rem; font-weight: 500;">
+                    @(isSearch ? $"Results for keyword: \"{query}\"" : "SilverSet community discussions and support.")
+                </p>
+            </div>
 
-    @if (!Model.Any())
-    {
-        <div class="text-center py-5">
-            <span class="text-muted">> NO_CATEGORIES_DEFINED</span>
+            <form asp-action="Index" method="get" class="d-flex" style="width: 320px;">
+                <input type="text" name="query" class="form-control search-input-silver" value="@query" placeholder="Search categories...">
+                <button type="submit" class="btn btn-search-silver">Search</button>
+            </form>
         </div>
-    }
-    else
-    {
-        @foreach (var category in Model)
-        {
-            <a asp-action="Category" asp-route-id="@category.Id" class="category-card">
-                <span class="cat-name">@category.Name</span>
-                <p class="cat-desc">@category.Description</p>
 
-                <div class="cat-stats">
-                    <span>Topics: <span class="stat-value">@category.Topics.Count</span></span>
-                    <span>Status: <span class="stat-value">ONLINE</span></span>
+        @if (!isSearch)
+        {
+            <div class="filter-bar">
+                <div class="alphabet-list">
+                    @if (availableLetters != null)
+                    {
+                        foreach (var letter in availableLetters)
+                        {
+                            <a asp-action="Index" asp-route-filter="@letter"
+                               class="filter-btn @(selectedFilter == letter.ToString() ? "active" : "")">
+                                @letter
+                            </a>
+                        }
+                    }
                 </div>
-            </a>
+                <a asp-action="Index" asp-route-filter="all"
+                   class="filter-btn all-sectors-btn @(selectedFilter == "all" || string.IsNullOrEmpty(selectedFilter) ? "active" : "")">
+                    All Categories
+                </a>
+            </div>
         }
-    }
+
+        <div class="category-grid">
+            @foreach (var category in Model)
+            {
+                var approvedTopics = category.Topics.Where(t => t.IsApproved);
+                var totalMessages = approvedTopics.SelectMany(t => t.Posts.Where(p => p.IsApproved)).Count();
+
+                <a asp-action="Category" asp-route-id="@category.Id" class="category-link-card">
+                    <span class="category-name-text">@category.Name</span>
+                    <span class="message-count-pill">@totalMessages</span>
+                </a>
+            }
+        </div>
+
+        @if (totalPages > 1)
+        {
+            <div class="pagination-bar">
+                @for (int i = 1; i <= totalPages; i++)
+                {
+                    <a asp-action="Index"
+                       asp-route-filter="@selectedFilter"
+                       asp-route-query="@query"
+                       asp-route-page="@i"
+                       class="page-link-silver @(i == currentPage ? "active" : "")">@i</a>
+                }
+            </div>
+        }
+
+        @if (isSearch && !Model.Any())
+        {
+            <div class="p-5 text-center" style="color: #333; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;">
+                -- No categories found matching your query --
+            </div>
+            <div class="text-center mt-3">
+                <a asp-action="Index" class="filter-btn" style="display: inline-block;">Back to Forum</a>
+            </div>
+        }
+    </div>
 </div>

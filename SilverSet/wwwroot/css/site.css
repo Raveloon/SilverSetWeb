@@ -56,3 +56,40 @@ body {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+:root {
+    --color-orange-glow: rgba(255, 165, 0, 0.4);
+    --color-red-glow: rgba(255, 68, 68, 0.4);
+    --color-orange-text: #ff9800;
+    --color-red-text: #ff4444;
+}
+
+.approval-badge-container {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-left: auto;
+}
+
+.badge-dot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 10px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #fff;
+    box-shadow: 0 0 10px var(--glow-color);
+}
+
+.badge-topic {
+    background: var(--color-orange-text);
+    --glow-color: var(--color-orange-glow);
+}
+
+.badge-post {
+    background: var(--color-red-text);
+    --glow-color: var(--color-red-glow);
+}

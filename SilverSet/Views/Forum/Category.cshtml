@@ -1,55 +1,65 @@
-﻿@model SilverSet.Models.Entities.Forum.ForumCategory
+﻿@using SilverSet.Models.Entities.Forum
+@model IEnumerable<ForumTopic>
 @{
-    ViewData["Title"] = Model.Name;
+    var category = ViewBag.Category as ForumCategory;
+    ViewData["Title"] = category?.Name;
+    int currentPage = ViewBag.CurrentPage;
+    int totalPages = ViewBag.TotalPages;
 }
 
 <style>
     .forum-container {
-        padding: 4rem 0;
+        background-color: #050505;
+        min-height: 100vh;
+        padding: 2rem 0;
     }
 
     .forum-path {
         color: #444;
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         text-transform: uppercase;
-        letter-spacing: 2px;
-        margin-bottom: 1rem;
+        letter-spacing: 1.5px;
+        margin-bottom: 0.8rem;
     }
 
         .forum-path a {
-            color: #888;
+            color: #777;
             text-decoration: none;
+            transition: 0.2s;
         }
 
+            .forum-path a:hover {
+                color: #fff;
+            }
+
     .category-header {
-        border-bottom: 1px solid #222;
-        margin-bottom: 2rem;
-        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #1a1a1a;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
         display: flex;
         justify-content: space-between;
-        align-items: flex-end;
+        align-items: center;
     }
 
         .category-header h1 {
             font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 4px;
             color: #fff;
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             margin: 0;
         }
 
-    .topic-list {
-        background: rgba(10, 10, 10, 0.4);
+    .topic-list-card {
+        background: #0a0a0a;
         border: 1px solid #1a1a1a;
+        border-radius: 4px;
     }
 
     .topic-row {
         display: grid;
-        grid-template-columns: 1fr 120px 200px;
+        grid-template-columns: 1fr 120px 160px;
         border-bottom: 1px solid #111;
         transition: 0.2s;
-        text-decoration: none;
+        text-decoration: none !important;
     }
 
         .topic-row:hover {
@@ -57,26 +67,24 @@
         }
 
     .topic-main {
-        padding: 1.2rem 1.5rem;
+        padding: 0.8rem 1.2rem;
     }
 
     .topic-title {
         color: #eee;
-        font-weight: 700;
-        font-size: 1rem;
+        font-weight: 600;
+        font-size: 0.95rem;
         display: block;
-        margin-bottom: 0.3rem;
+        margin-bottom: 0.1rem;
     }
 
     .topic-meta {
-        color: #555;
-        font-size: 0.7rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
+        color: #444;
+        font-size: 0.68rem;
     }
 
         .topic-meta span {
-            color: #888;
+            color: #777;
         }
 
     .topic-stats {
@@ -85,89 +93,141 @@
         justify-content: center;
         border-left: 1px solid #111;
         border-right: 1px solid #111;
+        gap: 15px;
+    }
+
+    .stat-value {
+        display: block;
+        color: #fff;
+        font-weight: 800;
+        font-size: 0.8rem;
+        text-align: center;
+    }
+
+    .stat-label {
+        font-size: 0.5rem;
+        color: #333;
+        text-transform: uppercase;
+        font-weight: 800;
+        letter-spacing: 0.5px;
     }
 
     .topic-last-post {
-        padding: 1rem;
+        padding: 0.6rem 1.2rem;
         display: flex;
         flex-direction: column;
         justify-content: center;
-        font-size: 0.75rem;
+        font-size: 0.7rem;
     }
 
     .last-post-user {
-        color: #fff;
+        color: #999;
         font-weight: 700;
     }
 
     .last-post-date {
-        color: #444;
+        color: #333;
+        font-size: 0.6rem;
     }
 
     .btn-new-topic {
-        border: 1px solid #fff;
-        color: #fff;
+        background: #e0e0e0;
+        color: #000;
         text-transform: uppercase;
-        font-size: 0.7rem;
-        letter-spacing: 2px;
-        padding: 0.6rem 1.5rem;
+        font-size: 0.65rem;
+        font-weight: 800;
+        padding: 0.5rem 1.2rem;
         text-decoration: none;
-        transition: 0.3s;
+        border-radius: 2px;
     }
-
-        .btn-new-topic:hover {
-            background: #fff;
-            color: #000;
-        }
 
     .badge-pinned {
         background: #fff;
         color: #000;
-        font-size: 0.6rem;
-        padding: 2px 6px;
+        font-size: 0.5rem;
+        padding: 1px 4px;
         font-weight: 900;
-        margin-right: 8px;
+        margin-right: 6px;
         vertical-align: middle;
     }
+
+    .page-link-dark {
+        background: #0a0a0a;
+        border: 1px solid #222;
+        color: #555;
+        padding: 4px 10px;
+        text-decoration: none;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+        .page-link-dark.active {
+            border-color: #666;
+            color: #fff;
+        }
 </style>
 
-<div class="container forum-container">
-    <div class="forum-path">
-        <a asp-action="Index">Terminal</a> / @Model.Name
-    </div>
-
-    <div class="category-header">
-        <div>
-            <h1>@Model.Name</h1>
+<div class="forum-container">
+    <div class="container">
+        <div class="forum-path">
+            <a asp-action="Index">Community</a> / @category?.Name
         </div>
-        <a href="#" class="btn-new-topic">New Broadcast</a>
-    </div>
 
-    <div class="topic-list">
-        @foreach (var topic in Model.Topics.OrderByDescending(t => t.IsPinned).ThenByDescending(t => t.CreatedAt))
+        <div class="category-header">
+            <div>
+                <h1>@category?.Name</h1>
+            </div>
+            @if (User.Identity.IsAuthenticated)
+            {
+                <a asp-action="CreateTopic" asp-route-categoryId="@category?.Id" class="btn-new-topic">New Topic</a>
+            }
+        </div>
+
+        <div class="topic-list-card">
+            @foreach (var topic in Model.Where(t => t.IsApproved))
+            {
+                <a asp-action="Topic" asp-route-id="@topic.Id" class="topic-row">
+                    <div class="topic-main">
+                        <div>
+                            @if (topic.IsPinned)
+                            {
+                                <span class="badge-pinned">PINNED</span>
+                            }
+                            <span class="topic-title">@topic.Title</span>
+                        </div>
+                        <div class="topic-meta">
+                            Started by <span>@topic.User.UserName</span>
+                        </div>
+                    </div>
+
+                    <div class="topic-stats">
+                        <div class="stat-item">
+                            <span class="stat-value">@topic.Posts.Count(p => p.IsApproved)</span>
+                            <span class="stat-label">Replies</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">@topic.ViewCount</span>
+                            <span class="stat-label">Views</span>
+                        </div>
+                    </div>
+
+                    <div class="topic-last-post">
+                        <span class="last-post-user">@topic.User.UserName</span>
+                        <span class="last-post-date">@topic.CreatedAt.ToString("MMM dd, HH:mm")</span>
+                    </div>
+                </a>
+            }
+        </div>
+
+        @if (totalPages > 1)
         {
-            <a href="#" class="topic-row">
-                <div class="topic-main">
-                    @if (topic.IsPinned)
-                    {
-                        <span class="badge-pinned">PINNED</span>
-                    }
-                    <span class="topic-title">@topic.Title</span>
-                    <div class="topic-meta">
-                        Identity: <span>@topic.User.UserName</span> | Status: @(topic.IsLocked ? "Encrypted" : "Open")
-                    </div>
-                </div>
-                <div class="topic-stats">
-                    <div style="text-align: center;">
-                        <span style="display: block; color: #fff; font-weight: 800;">@topic.Posts.Count</span>
-                        <span style="font-size: 0.55rem; color: #444; text-transform: uppercase; font-weight: 800;">Replies</span>
-                    </div>
-                </div>
-                <div class="topic-last-post">
-                    <span class="last-post-user">@topic.User.UserName</span>
-                    <span class="last-post-date">@topic.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
-                </div>
-            </a>
+            <div class="d-flex justify-content-center gap-2 mt-4">
+                @for (int i = 1; i <= totalPages; i++)
+                {
+                    <a asp-action="Category" asp-route-id="@category.Id" asp-route-page="@i"
+                       class="page-link-dark @(i == currentPage ? "active" : "")">@i</a>
+                }
+            </div>
         }
     </div>
 </div>

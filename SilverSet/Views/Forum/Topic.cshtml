@@ -1,41 +1,235 @@
-﻿@model IEnumerable<SilverSet.Models.Entities.Forum.ForumPost>
+﻿@using SilverSet.Models.ViewModels
+@model TopicDetailViewModel
 @{
-    var topic = ViewBag.Topic as SilverSet.Models.Entities.Forum.ForumTopic;
-    ViewData["Title"] = topic?.Title;
+    ViewData["Title"] = Model.Topic.Title;
 }
 
-<div class="container py-5">
-    @* Ana Konu Başlığı *@
-    <div class="p-4 mb-4" style="background: rgba(20,20,20,0.6); border: 1px solid #333;">
-        <div class="d-flex justify-content-between text-muted small mb-2">
-            <span>BY: @topic?.User.UserName</span>
-            <span>@topic?.CreatedAt.ToString("g")</span>
-        </div>
-        <h2 class="text-white fw-bold">@topic?.Title</h2>
-        <hr class="border-secondary">
-        <div class="text-light" style="white-space: pre-line;">@topic?.Content</div>
-    </div>
-
-    @* Mesajlar (Postlar) *@
-    @foreach (var post in Model)
-    {
-        <div class="p-3 mb-2" style="background: rgba(10,10,10,0.4); border-left: 2px solid #444;">
-            <div class="small text-muted mb-1">@post.User.UserName - @post.CreatedAt.ToString("g")</div>
-            <div class="text-light">@post.Content</div>
-        </div>
+<style>
+    body {
+        background-color: #050505;
+        color: #eee;
     }
 
-    @* Cevap Yazma Formu *@
-    @if (User.Identity!.IsAuthenticated)
-    {
-        <div class="mt-5 p-4" style="border: 1px solid #222;">
-            <form asp-action="CreatePost" method="post">
-                <input type="hidden" name="topicId" value="@topic?.Id" />
-                <input type="text" name="honeyPot" style="display:none" />
+    .topic-container {
+        padding: 3rem 0;
+    }
 
-                <textarea name="content" class="form-control bg-dark border-secondary text-white mb-3" rows="4" placeholder="Type your response..."></textarea>
-                <button type="submit" class="btn btn-outline-light btn-sm fw-bold">SUBMIT_POST</button>
+    .topic-header-section {
+        border-bottom: 1px solid #1a1a1a;
+        padding-bottom: 2rem;
+        margin-bottom: 3rem;
+    }
+
+    .topic-title-h1 {
+        font-size: 2.2rem;
+        font-weight: 900;
+        letter-spacing: -0.5px;
+        color: #fff;
+        margin-bottom: 0.5rem;
+    }
+
+    .topic-breadcrumb {
+        font-size: 0.8rem;
+        color: #555;
+    }
+
+        .topic-breadcrumb a {
+            color: #888;
+            text-decoration: none;
+            transition: 0.2s;
+        }
+
+            .topic-breadcrumb a:hover {
+                color: #fff;
+            }
+
+    .post-wrapper {
+        background: #0d0d0d;
+        border: 1px solid #1a1a1a;
+        border-radius: 4px;
+        display: flex;
+        margin-bottom: 2rem;
+    }
+
+    .author-sidebar {
+        width: 180px;
+        min-width: 180px;
+        background: #111;
+        border-right: 1px solid #1a1a1a;
+        padding: 2rem 1rem;
+        text-align: center;
+    }
+
+    .author-avatar {
+        width: 60px;
+        height: 60px;
+        background: #222;
+        border: 2px solid #333;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 1.4rem;
+        color: #fff;
+        margin: 0 auto 1rem;
+    }
+
+    .author-name {
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.9rem;
+        display: block;
+    }
+
+    .author-rank {
+        color: #444;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        font-weight: 800;
+        letter-spacing: 1px;
+    }
+
+    .post-main-content {
+        padding: 2.5rem;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .post-text-body {
+        color: #ccc;
+        line-height: 1.8;
+        font-size: 1.05rem;
+        white-space: pre-wrap;
+        flex-grow: 1;
+    }
+
+    .post-footer {
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 1px solid #151515;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .post-date {
+        color: #333;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .btn-reply-trigger {
+        background: none;
+        border: none;
+        color: #666;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        font-weight: 800;
+        letter-spacing: 1px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: 0.2s;
+    }
+
+        .btn-reply-trigger:hover {
+            color: #fff;
+        }
+
+    .quick-reply-box {
+        background: #080808;
+        border: 1px solid #1a1a1a;
+        padding: 2rem;
+        border-radius: 4px;
+        margin-top: 4rem;
+    }
+
+    .forum-textarea {
+        background: #000 !important;
+        border: 1px solid #222 !important;
+        color: #fff !important;
+        padding: 1.2rem;
+        font-size: 1rem;
+        border-radius: 4px;
+    }
+</style>
+
+<div class="container topic-container">
+    <div class="topic-header-section">
+        <div class="topic-breadcrumb">
+            <a asp-action="Index">Forum</a> /
+            <a asp-action="Category" asp-route-id="@Model.Topic.CategoryId">@Model.Topic.Category.Name</a>
+        </div>
+        <h1 class="topic-title-h1">@Model.Topic.Title</h1>
+    </div>
+
+    <div class="post-wrapper" id="topic-starter">
+        <div class="author-sidebar">
+            <div class="author-avatar">@Model.Topic.User.UserName.Substring(0, 1).ToUpper()</div>
+            <span class="author-name">@Model.Topic.User.UserName</span>
+            <span class="author-rank">Topic Starter</span>
+        </div>
+        <div class="post-main-content">
+            <div class="post-text-body">@Model.Topic.Content</div>
+            <div class="post-footer">
+                <span class="post-date">@Model.Topic.CreatedAt.ToString("MMM dd, yyyy HH:mm")</span>
+                @if (User.Identity.IsAuthenticated && !Model.Topic.IsLocked)
+                {
+                    <button type="button" onclick="scrollToReply()" class="btn-reply-trigger">
+                        <i class="bi bi-chat-left-fill"></i> Post Reply
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="replies-list">
+        @foreach (var post in Model.Posts)
+        {
+            @await Html.PartialAsync("_PostItem", post)
+        }
+    </div>
+
+    @if (User.Identity.IsAuthenticated && !Model.Topic.IsLocked)
+    {
+        <div class="quick-reply-box" id="reply-form-area">
+            <h4 class="text-white mb-4" style="font-weight: 800;">Join the Discussion</h4>
+            <form asp-action="CreatePost" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="topicId" value="@Model.Topic.Id" />
+                <textarea name="content" class="form-control forum-textarea mb-4" rows="6" placeholder="Share your thoughts..."></textarea>
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-light px-5 py-2 fw-bold" style="border-radius: 4px;">Post Message</button>
+                </div>
             </form>
         </div>
     }
 </div>
+
+@section Scripts {
+    <script>
+        function scrollToReply() {
+            document.getElementById('reply-form-area').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function openReplyForm(id) {
+            const container = document.getElementById('reply-form-container-' + id);
+            if (container) {
+                container.classList.toggle('d-none');
+            }
+        }
+
+        function prepareMentionReply(id, username) {
+            const container = document.getElementById('reply-form-container-' + id);
+            const textarea = document.getElementById('textarea-' + id);
+
+            if (container && textarea) {
+                container.classList.remove('d-none');
+                textarea.value = '@@' + username + ' ';
+                textarea.focus();
+            }
+        }
+    </script>
+}
