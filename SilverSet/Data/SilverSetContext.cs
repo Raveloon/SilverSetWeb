@@ -10,7 +10,7 @@ public class SilverSetContext : IdentityDbContext<AppUser, AppRole, int>
     public SilverSetContext(DbContextOptions<SilverSetContext> options) : base(options)
     {
     }
-
+    public DbSet<ForumSpamLog> ForumSpamLogs { get; set; }
     public DbSet<PasswordResetLog> PasswordResetLogs { get; set; }
     public DbSet<UserLoginLog> UserLoginLogs { get; set; }
     public DbSet<Ticket> Tickets { get; set; }

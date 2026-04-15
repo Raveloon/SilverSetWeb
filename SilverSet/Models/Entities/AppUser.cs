@@ -7,6 +7,7 @@ namespace SilverSet.Models.Entities
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public bool IsBanned { get; set; } = false;
         public string? BanReason { get; set; }
+        public bool ForcePostApproval { get; set; } = false;
     }
 
     public class AppRole : IdentityRole<int> { }

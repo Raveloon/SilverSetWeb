@@ -1,0 +1,155 @@
+﻿@model IEnumerable<SilverSet.Models.Entities.Forum.ForumSpamLog>
+@{
+    ViewData["Title"] = "Forum Spam Control";
+    Layout = "_Layout"; 
+}
+
+<style>
+    .spam-card {
+        background: #0d0d0d;
+        border: 1px solid #1a1a1a;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        transition: transform 0.2s;
+    }
+
+    .spam-header {
+        background: #111;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #1a1a1a;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .spam-body {
+        padding: 1.5rem;
+    }
+
+    .caught-word-tag {
+        color: #f87171;
+        font-weight: 800;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        border: 1px solid #f87171;
+        padding: 2px 8px;
+        border-radius: 4px;
+        margin-right: 10px;
+    }
+
+    .clickable-word {
+        cursor: pointer;
+        padding: 2px 4px;
+        border-radius: 3px;
+        transition: all 0.2s;
+        color: #aaa;
+    }
+
+        .clickable-word:hover {
+            background: #333;
+            color: #fff;
+        }
+
+    .btn-silver {
+        background: #222;
+        border: 1px solid #333;
+        color: #eee;
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 0.4rem 1rem;
+    }
+
+        .btn-silver:hover {
+            background: #333;
+            color: #fff;
+        }
+
+    .user-info {
+        font-size: 0.85rem;
+        color: #888;
+    }
+
+    .topic-path {
+        font-size: 0.75rem;
+        color: #555;
+        margin-bottom: 0.5rem;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-white fw-bold">Forum Spam Logs</h2>
+        <span class="badge bg-secondary">Total: @Model.Count()</span>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-dark border-secondary text-center py-5">
+            <i class="bi bi-shield-check fs-1 d-block mb-3 opacity-50"></i>
+            Huzur hakim. Filtreye takılan içerik bulunamadı.
+        </div>
+    }
+
+    @foreach (var log in Model)
+    {
+        <div class="spam-card" id="log-@log.Id">
+            <div class="spam-header">
+                <div>
+                    <div class="topic-path">
+                        @log.Topic?.Category?.Name / @log.Topic?.Title
+                    </div>
+                    <span class="user-info">
+                        <strong>@log.User.UserName</strong> tarafından gönderildi
+                    </span>
+                </div>
+                <div class="d-flex gap-2">
+                    <a asp-action="ModerationView" asp-route-topicId="@log.TopicId" class="btn btn-silver">
+                        <i class="bi bi-eye"></i> Detay
+                    </a>
+                    <form asp-action="DeleteItem" method="post" onsubmit="return confirm('Silmek istediğine emin misin?')">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@(log.PostId ?? log.TopicId)" />
+                        <input type="hidden" name="type" value="@log.Type" />
+                        <button type="submit" class="btn btn-outline-danger btn-sm px-3">SİL</button>
+                    </form>
+                </div>
+            </div>
+            <div class="spam-body">
+                <div class="mb-3">
+                    <span class="caught-word-tag">Yakalanan: @log.CaughtWord</span>
+                    <span class="text-muted small">Mesajın üzerine tıklayarak yeni kelime ekleyebilirsin:</span>
+                </div>
+                <div class="text-white-50 border-start border-secondary ps-3 py-2" style="background: #080808">
+                    @foreach (var word in log.Content.Split(' '))
+                    {
+                        <span class="clickable-word" onclick="confirmAddWord('@word.Trim('.',',','!','?')')">@word </span>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        function confirmAddWord(word) {
+            if (confirm(`'${word}' kelimesini yasaklılar listesine eklemek istediğine emin misin?`)) {
+                const token = $('input[name="__RequestVerificationToken"]').val();
+                $.ajax({
+                    url: '@Url.Action("AddBadWord")',
+                    type: 'POST',
+                    data: {
+                        word: word,
+                        __RequestVerificationToken: token
+                    },
+                    success: function() {
+                        alert('Kelime başarıyla eklendi ve cache temizlendi.');
+                    },
+                    error: function() {
+                        alert('Bir hata oluştu.');
+                    }
+                });
+            }
+        }
+    </script>
+}

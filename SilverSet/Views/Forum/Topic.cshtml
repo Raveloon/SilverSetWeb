@@ -154,6 +154,69 @@
         font-size: 1rem;
         border-radius: 4px;
     }
+
+    /* Snackbar Styles */
+    .ss-snackbar-container {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .ss-snackbar {
+        background: #1a1a1a;
+        color: #e0e0e0;
+        padding: 12px 24px;
+        border-radius: 4px;
+        border: 1px solid #333;
+        font-size: 0.9rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        min-width: 320px;
+        animation: snackbarIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+        .ss-snackbar i {
+            color: #888;
+            font-size: 1.1rem;
+        }
+
+    @@keyframes snackbarIn {
+        from
+
+    {
+        transform: translateY(100px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    }
+
+    @@keyframes snackbarOut {
+        from
+
+    {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateY(100px);
+        opacity: 0;
+    }
+
+    }
 </style>
 
 <div class="container topic-container">
@@ -199,7 +262,7 @@
             <form asp-action="CreatePost" method="post">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="topicId" value="@Model.Topic.Id" />
-                <textarea name="content" class="form-control forum-textarea mb-4" rows="6" placeholder="Share your thoughts..."></textarea>
+                <textarea name="content" class="form-control forum-textarea mb-4" rows="6" placeholder="Share your thoughts...">@TempData["DraftContent"]</textarea>
                 <div class="d-flex justify-content-end">
                     <button type="submit" class="btn btn-light px-5 py-2 fw-bold" style="border-radius: 4px;">Post Message</button>
                 </div>
@@ -207,6 +270,33 @@
         </div>
     }
 </div>
+
+@if (TempData["Error"] != null || TempData["Info"] != null || TempData["Success"] != null)
+{
+    <div class="ss-snackbar-container">
+        @if (TempData["Error"] != null)
+        {
+            <div class="ss-snackbar">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span>@TempData["Error"]</span>
+            </div>
+        }
+        @if (TempData["Info"] != null)
+        {
+            <div class="ss-snackbar">
+                <i class="bi bi-info-circle"></i>
+                <span>@TempData["Info"]</span>
+            </div>
+        }
+        @if (TempData["Success"] != null)
+        {
+            <div class="ss-snackbar">
+                <i class="bi bi-check2-circle"></i>
+                <span>@TempData["Success"]</span>
+            </div>
+        }
+    </div>
+}
 
 @section Scripts {
     <script>
@@ -230,6 +320,31 @@
                 textarea.value = '@@' + username + ' ';
                 textarea.focus();
             }
+        }
+
+        @if (TempData["DraftContent"] != null)
+        {
+            <text>
+                    document.addEventListener("DOMContentLoaded", function () {
+                        scrollToReply();
+                    });
+            </text>
+        }
+
+        @if (TempData["Error"] != null || TempData["Info"] != null || TempData["Success"] != null)
+        {
+            <text>
+                    setTimeout(() => {
+                        const snaks = document.querySelectorAll('.ss-snackbar');
+                        snaks.forEach(s => {
+                            s.style.animation = 'snackbarOut 0.4s ease-in forwards';
+                        });
+                        setTimeout(() => {
+                            const container = document.querySelector('.ss-snackbar-container');
+                            if(container) container.remove();
+                        }, 400);
+                    }, 4000);
+            </text>
         }
     </script>
 }

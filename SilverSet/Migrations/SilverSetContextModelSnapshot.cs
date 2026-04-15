@@ -183,6 +183,9 @@ namespace SilverSet.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("ForcePostApproval")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsBanned")
                         .HasColumnType("bit");
 
@@ -360,6 +363,52 @@ namespace SilverSet.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("ForumPosts");
+                });
+
+            modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumSpamLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CaughtWord")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsHandled")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("PostId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TopicId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PostId");
+
+                    b.HasIndex("TopicId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ForumSpamLogs");
                 });
 
             modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumTopic", b =>
@@ -674,6 +723,29 @@ namespace SilverSet.Migrations
                         .IsRequired();
 
                     b.Navigation("ParentPost");
+
+                    b.Navigation("Topic");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumSpamLog", b =>
+                {
+                    b.HasOne("SilverSet.Models.Entities.Forum.ForumPost", "Post")
+                        .WithMany()
+                        .HasForeignKey("PostId");
+
+                    b.HasOne("SilverSet.Models.Entities.Forum.ForumTopic", "Topic")
+                        .WithMany()
+                        .HasForeignKey("TopicId");
+
+                    b.HasOne("SilverSet.Models.Entities.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Post");
 
                     b.Navigation("Topic");
 

@@ -60,10 +60,10 @@ public class ProfanityFilterService
         var blacklist = await GetBlacklistAsync();
 
         var titleCheck = CheckWords(title, blacklist);
-        if (titleCheck.IsFound) return (true, $"Başlık: {titleCheck.Word}");
+        if (titleCheck.IsFound) return (true, titleCheck.Word);
 
         var contentCheck = CheckWords(content, blacklist);
-        if (contentCheck.IsFound) return (true, $"İçerik: {contentCheck.Word}");
+        if (contentCheck.IsFound) return (true, contentCheck.Word);
 
         return (false, string.Empty);
     }

@@ -17,12 +17,14 @@ public class ForumController : Controller
     private readonly SilverSetContext _context;
     private readonly UserManager<AppUser> _userManager;
     private readonly ForumSettingsService _settingsService;
+    private readonly ProfanityFilterService _profanityService;
 
-    public ForumController(SilverSetContext context, UserManager<AppUser> userManager, ForumSettingsService settingsService)
+    public ForumController(SilverSetContext context, UserManager<AppUser> userManager, ForumSettingsService settingsService, ProfanityFilterService profanityService)
     {
         _context = context;
         _userManager = userManager;
         _settingsService = settingsService;
+        _profanityService = profanityService;
     }
 
     public async Task<IActionResult> Index(string filter = "all", string query = null, int page = 1)
@@ -96,9 +98,11 @@ public class ForumController : Controller
 
         if (category == null) return NotFound();
 
+        var currentUserId = _userManager.GetUserId(User);
+
         var topicsQuery = _context.ForumTopics
             .AsNoTracking()
-            .Where(t => t.CategoryId == id && t.IsApproved)
+            .Where(t => t.CategoryId == id && (t.IsApproved || t.UserId.ToString() == currentUserId))
             .Include(t => t.User)
             .Include(t => t.Posts.Where(p => p.IsApproved))
             .OrderByDescending(t => t.IsPinned)
@@ -127,7 +131,9 @@ public class ForumController : Controller
 
         if (topic == null) return NotFound();
 
-        if (!topic.IsApproved && !User.IsInRole("Admin"))
+        var currentUserId = _userManager.GetUserId(User);
+
+        if (!topic.IsApproved && !User.IsInRole("Admin") && topic.UserId.ToString() != currentUserId)
         {
             return NotFound();
         }
@@ -137,7 +143,7 @@ public class ForumController : Controller
 
         var postsQuery = _context.ForumPosts
             .AsNoTracking()
-            .Where(p => p.TopicId == id && p.IsApproved)
+            .Where(p => p.TopicId == id && (p.IsApproved || p.UserId.ToString() == currentUserId))
             .Include(p => p.User)
             .OrderBy(p => p.CreatedAt);
 
@@ -176,12 +182,40 @@ public class ForumController : Controller
 
         if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(content))
         {
+            TempData["DraftTitle"] = title;
+            TempData["DraftContent"] = content;
             return RedirectToAction(nameof(CreateTopic), new { categoryId });
         }
 
         var user = await _userManager.GetUserAsync(User);
-        var threshold = await _settingsService.GetShadowPostLimit();
 
+        if (!User.IsInRole("Admin"))
+        {
+            var pendingActivityCount = await _context.ForumTopics.CountAsync(t => t.UserId == user!.Id && !t.IsApproved)
+                                     + await _context.ForumPosts.CountAsync(p => p.UserId == user!.Id && !p.IsApproved);
+
+            if (pendingActivityCount >= 5)
+            {
+                TempData["Error"] = "You have reached the maximum limit of pending contents (5). Please wait for moderator approval to post again.";
+                TempData["DraftTitle"] = title;
+                TempData["DraftContent"] = content;
+                return RedirectToAction(nameof(Category), new { id = categoryId });
+            }
+
+            var oneMinuteAgo = DateTime.UtcNow.AddMinutes(-1);
+            var recentActivityCount = await _context.ForumTopics.CountAsync(t => t.UserId == user!.Id && t.CreatedAt >= oneMinuteAgo)
+                                    + await _context.ForumPosts.CountAsync(p => p.UserId == user!.Id && p.CreatedAt >= oneMinuteAgo);
+
+            if (recentActivityCount >= 2)
+            {
+                TempData["Error"] = "You are posting too fast! Please wait a minute before posting again.";
+                TempData["DraftTitle"] = title;
+                TempData["DraftContent"] = content;
+                return RedirectToAction(nameof(CreateTopic), new { categoryId });
+            }
+        }
+
+        var threshold = await _settingsService.GetShadowPostLimit();
         var approvedActivityCount = await _context.ForumPosts.CountAsync(p => p.UserId == user!.Id && p.IsApproved)
                                   + await _context.ForumTopics.CountAsync(t => t.UserId == user!.Id && t.IsApproved);
 
@@ -217,11 +251,39 @@ public class ForumController : Controller
         var topic = await _context.ForumTopics.FindAsync(topicId);
         if (topic == null || topic.IsLocked) return BadRequest();
 
-        if (string.IsNullOrWhiteSpace(content)) return RedirectToAction(nameof(Topic), new { id = topicId });
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            TempData["DraftContent"] = content;
+            return RedirectToAction(nameof(Topic), new { id = topicId });
+        }
 
         var user = await _userManager.GetUserAsync(User);
-        var threshold = await _settingsService.GetShadowPostLimit();
 
+        if (!User.IsInRole("Admin"))
+        {
+            var pendingActivityCount = await _context.ForumTopics.CountAsync(t => t.UserId == user!.Id && !t.IsApproved)
+                                     + await _context.ForumPosts.CountAsync(p => p.UserId == user!.Id && !p.IsApproved);
+
+            if (pendingActivityCount >= 5)
+            {
+                TempData["Error"] = "You have reached the maximum limit of pending contents (5). Please wait for moderator approval to post again.";
+                TempData["DraftContent"] = content;
+                return RedirectToAction(nameof(Topic), new { id = topicId });
+            }
+
+            var oneMinuteAgo = DateTime.UtcNow.AddMinutes(-1);
+            var recentActivityCount = await _context.ForumTopics.CountAsync(t => t.UserId == user!.Id && t.CreatedAt >= oneMinuteAgo)
+                                    + await _context.ForumPosts.CountAsync(p => p.UserId == user!.Id && p.CreatedAt >= oneMinuteAgo);
+
+            if (recentActivityCount >= 2)
+            {
+                TempData["Error"] = "You are posting too fast! Please wait a minute before replying again.";
+                TempData["DraftContent"] = content;
+                return RedirectToAction(nameof(Topic), new { id = topicId });
+            }
+        }
+
+        var threshold = await _settingsService.GetShadowPostLimit();
         var approvedActivityCount = await _context.ForumPosts.CountAsync(p => p.UserId == user!.Id && p.IsApproved)
                                   + await _context.ForumTopics.CountAsync(t => t.UserId == user!.Id && t.IsApproved);
 
@@ -282,6 +344,51 @@ public class ForumController : Controller
         return View(allPending);
     }
 
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> SpamLogs()
+    {
+        var logs = await _context.ForumSpamLogs
+            .Include(l => l.User)
+            .Include(l => l.Topic)
+                .ThenInclude(t => t.Category)
+            .OrderByDescending(l => l.CreatedAt)
+            .ToListAsync();
+        return View(logs);
+    }
+
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ModerationView(int topicId)
+    {
+        var topic = await _context.ForumTopics
+            .Include(t => t.User)
+            .Include(t => t.Category)
+            .Include(t => t.Posts)
+                .ThenInclude(p => p.User)
+            .FirstOrDefaultAsync(t => t.Id == topicId);
+
+        if (topic == null) return NotFound();
+
+        return View(topic);
+    }
+
+    [HttpPost]
+    [Authorize(Roles = "Admin")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddBadWord(string word)
+    {
+        if (!string.IsNullOrWhiteSpace(word))
+        {
+            var cleanWord = word.Trim().ToLower();
+            if (!await _context.BadWords.AnyAsync(b => b.Word == cleanWord))
+            {
+                _context.BadWords.Add(new BadWord { Word = cleanWord });
+                await _context.SaveChangesAsync();
+                _profanityService.ClearCache();
+            }
+        }
+        return Ok();
+    }
+
     [HttpPost]
     [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
@@ -296,6 +403,30 @@ public class ForumController : Controller
         {
             var post = await _context.ForumPosts.FindAsync(id);
             if (post != null) post.IsApproved = true;
+        }
+
+        await _context.SaveChangesAsync();
+        return RedirectToAction(nameof(PendingApprovals));
+    }
+
+    [HttpPost]
+    [Authorize(Roles = "Admin")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteItem(int id, string type)
+    {
+        if (type == "Topic")
+        {
+            var topic = await _context.ForumTopics.Include(t => t.Posts).FirstOrDefaultAsync(t => t.Id == id);
+            if (topic != null)
+            {
+                _context.ForumPosts.RemoveRange(topic.Posts);
+                _context.ForumTopics.Remove(topic);
+            }
+        }
+        else
+        {
+            var post = await _context.ForumPosts.FindAsync(id);
+            if (post != null) _context.ForumPosts.Remove(post);
         }
         await _context.SaveChangesAsync();
         return RedirectToAction(nameof(PendingApprovals));
