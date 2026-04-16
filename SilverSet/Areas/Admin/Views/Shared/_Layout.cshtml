@@ -1,11 +1,11 @@
 ﻿@using Microsoft.EntityFrameworkCore
 @inject SilverSet.Data.SilverSetContext _context
 @{
-    // Forum Onay Bekleyenler
     var pTopics = _context.ForumTopics.Count(t => !t.IsApproved);
     var pPosts = _context.ForumPosts.Count(p => !p.IsApproved);
 
-    // Ticket Sayıları (DbSet ismini 'Tickets' olarak düzelttim)
+    var spamLogCount = _context.ForumSpamLogs.Count(l => !l.IsHandled);
+
     var activeTicketCount = _context.Tickets.Count(t => t.IsOpen && !t.IsSpam);
     var spamTicketCount = _context.Tickets.Count(t => t.IsOpen && t.IsSpam);
 }
@@ -154,7 +154,6 @@
                 text-align: center;
             }
 
-        /* BADGE TASARIMLARI */
         .badge-group {
             display: flex;
             gap: 5px;
@@ -366,7 +365,7 @@
 
             <div class="nav-section-label">SUPPORT</div>
             <a asp-area="Admin" asp-controller="Tickets" asp-action="Index" asp-route-view="active"
-               class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tickets" && (string)ViewContext.RouteData.Values["action"] == "Index" ? "active" : "")">
+               class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tickets" && Context.Request.Query["view"] == "active" ? "active" : "")">
                 <i class="bi bi-ticket-detailed"></i> Support Tickets
                 @if (activeTicketCount > 0)
                 {
@@ -374,7 +373,7 @@
                 }
             </a>
             <a asp-area="Admin" asp-controller="Tickets" asp-action="Index" asp-route-view="spam"
-               class="sidebar-link">
+               class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tickets" && Context.Request.Query["view"] == "spam" ? "active" : "")">
                 <i class="bi bi-shield-x"></i> Spam
                 @if (spamTicketCount > 0)
                 {
@@ -416,6 +415,14 @@
                             <span class="notification-badge badge-red" title="Pending Posts">@pPosts</span>
                         }
                     </div>
+                }
+            </a>
+            <a asp-area="Admin" asp-controller="Forum" asp-action="SpamLogs"
+               class="sidebar-link @(ViewContext.RouteData.Values["action"]?.ToString() == "SpamLogs" ? "active" : "")">
+                <i class="bi bi-shield-slash"></i> Forum Spam Logs
+                @if (spamLogCount > 0)
+                {
+                    <span class="notification-badge badge-red">@spamLogCount</span>
                 }
             </a>
         </nav>

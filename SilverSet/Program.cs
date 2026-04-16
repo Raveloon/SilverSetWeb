@@ -134,7 +134,7 @@ public class Program
                 {
                     context.GlobalSettings.AddRange(
                         new GlobalSetting { Key = "ForumStatus", Value = "true", Description = "Forumun genel eriþim durumu" },
-                        new GlobalSetting { Key = "ForumPostDelay", Value = "24h", Description = "Yeni üyeler için bekleme süresi (h: saat, m: dakika)" },
+                        new GlobalSetting { Key = "ForumPostDelay", Value = "24h", Description = "Yeni üyeler için bekleme süresi" },
                         new GlobalSetting { Key = "ForumApprovalThreshold", Value = "5", Description = "Otomatik onay için gereken mesaj sayýsý" }
                     );
                     await context.SaveChangesAsync();

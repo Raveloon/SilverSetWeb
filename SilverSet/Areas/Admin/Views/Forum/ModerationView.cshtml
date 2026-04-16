@@ -1,0 +1,143 @@
+﻿@model SilverSet.Models.Entities.Forum.ForumTopic
+@{
+    ViewData["Title"] = "İçerik İnceleme";
+    Layout = "_Layout";
+    var pendingPosts = Model.Posts.Where(p => !p.IsApproved).ToList();
+}
+
+<style>
+    .mod-topic-header {
+        background: #111;
+        border: 1px solid #222;
+        padding: 2rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+    }
+
+    .post-card {
+        background: #0d0d0d;
+        border: 1px solid #1a1a1a;
+        border-radius: 6px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        position: relative;
+    }
+
+        .post-card.pending {
+            border-left: 4px solid #f59e0b;
+            background: #1a140a;
+        }
+
+        .post-card.spam-trigger {
+            border-left: 4px solid #ef4444;
+            background: #1a0a0a;
+        }
+
+    .user-badge {
+        font-size: 0.7rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        padding: 2px 8px;
+        border-radius: 4px;
+    }
+
+    .badge-admin {
+        background: #ef4444;
+        color: white;
+    }
+
+    .badge-member {
+        background: #333;
+        color: #aaa;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a asp-action="SpamLogs" class="btn btn-outline-secondary btn-sm mb-2">
+                <i class="bi bi-arrow-left"></i> Listeye Dön
+            </a>
+            <h2 class="text-white fw-bold">Konu İnceleme: <span class="text-info">@Model.Title</span></h2>
+            <p class="text-muted">Kategori: @Model.Category.Name | Başlatan: @Model.User.UserName</p>
+        </div>
+
+        @if (pendingPosts.Any() || !Model.IsApproved)
+        {
+            <div class="alert alert-warning d-flex align-items-center gap-3 mb-0">
+                <i class="bi bi-exclamation-triangle fs-4"></i>
+                <div>
+                    <strong>Bu konuda onay bekleyen içerikler var.</strong>
+                    <div class="small">Kullanıcı şu an denetim altında tutuluyor.</div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="mod-topic-header">
+        <div class="d-flex justify-content-between mb-3">
+            <span class="user-badge @(Model.User.UserName == "admin" ? "badge-admin" : "badge-member")">
+                @Model.User.UserName
+            </span>
+            <span class="text-muted small">@Model.CreatedAt.ToString("g")</span>
+        </div>
+        <div class="text-white fs-5">@Model.Content</div>
+
+        @if (!Model.IsApproved)
+        {
+            <div class="mt-4 pt-3 border-top border-secondary d-flex gap-2">
+                <form asp-action="ApproveItem" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <input type="hidden" name="type" value="Topic" />
+                    <button type="submit" class="btn btn-success btn-sm px-4">KONUYU ONAYLA</button>
+                </form>
+                <form asp-action="DeleteItem" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <input type="hidden" name="type" value="Topic" />
+                    <button type="submit" class="btn btn-danger btn-sm px-4">KONUYU SİL</button>
+                </form>
+            </div>
+        }
+    </div>
+
+    <h4 class="text-muted mb-3 small text-uppercase fw-bold">Mesaj Akışı</h4>
+
+    @foreach (var post in Model.Posts.OrderBy(p => p.CreatedAt))
+    {
+        <div class="post-card @(!post.IsApproved ? "pending" : "")">
+            <div class="d-flex justify-content-between mb-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="fw-bold text-white-50">@post.User.UserName</span>
+                    @if (!post.IsApproved)
+                    {
+                        <span class="badge bg-warning text-dark" style="font-size: 0.6rem;">ONAY BEKLİYOR</span>
+                    }
+                </div>
+                <span class="text-muted small">@post.CreatedAt.ToString("HH:mm")</span>
+            </div>
+
+            <div class="text-white">@post.Content</div>
+
+            @if (!post.IsApproved)
+            {
+                <div class="mt-3 d-flex gap-2">
+                    <form asp-action="ApproveItem" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@post.Id" />
+                        <input type="hidden" name="type" value="Post" />
+                        <button type="submit" class="btn btn-link text-success p-0 text-decoration-none small fw-bold">ONAYLA</button>
+                    </form>
+                    <span class="text-muted">|</span>
+                    <form asp-action="DeleteItem" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@post.Id" />
+                        <input type="hidden" name="type" value="Post" />
+                        <button type="submit" class="btn btn-link text-danger p-0 text-decoration-none small fw-bold">SİL</button>
+                    </form>
+                </div>
+            }
+        </div>
+    }
+</div>

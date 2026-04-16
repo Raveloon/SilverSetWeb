@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using Microsoft.EntityFrameworkCore;
 using SilverSet.Data;
-using SilverSet.Models.Entities;
+using SilverSet.Models.Entities.Forum;
+using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Hosting;
 
 namespace SilverSet.Services;
 
@@ -9,26 +11,40 @@ public class ProfanityFilterService
 {
     private readonly SilverSetContext _context;
     private readonly IMemoryCache _cache;
-    private const string CacheKey = "BadWordsList";
+    private readonly IWebHostEnvironment _env;
+    private const string CacheKey = "UnifiedBadWordsList";
 
-    public ProfanityFilterService(SilverSetContext context, IMemoryCache cache)
+    public ProfanityFilterService(SilverSetContext context, IMemoryCache cache, IWebHostEnvironment env)
     {
         _context = context;
         _cache = cache;
+        _env = env;
     }
 
-    private async Task<HashSet<string>> GetBlacklistAsync()
+    private async Task<List<string>> GetBlacklistAsync()
     {
-        if (!_cache.TryGetValue(CacheKey, out HashSet<string>? blacklist))
+        if (!_cache.TryGetValue(CacheKey, out List<string>? blacklist))
         {
-            var words = await _context.BadWords
-                .Select(b => b.Word.ToLower().Trim())
+            var dbWords = await _context.BadWords
+                .Select(b => b.Word.ToLowerInvariant().Trim())
                 .ToListAsync();
 
-            blacklist = new HashSet<string>(words, StringComparer.OrdinalIgnoreCase);
+            var fileWords = new List<string>();
+            string filePath = Path.Combine(_env.ContentRootPath, "Data", "blacklist.txt");
+
+            if (File.Exists(filePath))
+            {
+                var lines = await File.ReadAllLinesAsync(filePath);
+                fileWords = lines
+                    .Where(l => !string.IsNullOrWhiteSpace(l))
+                    .Select(l => l.ToLowerInvariant().Trim())
+                    .ToList();
+            }
+
+            blacklist = dbWords.Union(fileWords).Distinct().ToList();
             _cache.Set(CacheKey, blacklist, TimeSpan.FromHours(24));
         }
-        return blacklist ?? new HashSet<string>();
+        return blacklist ?? new List<string>();
     }
 
     public void ClearCache()
@@ -41,43 +57,58 @@ public class ProfanityFilterService
         if (string.IsNullOrWhiteSpace(input)) return input;
 
         var blacklist = await GetBlacklistAsync();
-        var words = input.Split(' ');
+        string result = input;
 
-        for (int i = 0; i < words.Length; i++)
+        foreach (var badWord in blacklist)
         {
-            var cleanWord = words[i].Trim('.', ',', '!', '?', '(', ')', '\n', '\r');
-            if (blacklist.Contains(cleanWord))
-            {
-                words[i] = words[i][0] + new string('*', words[i].Length - 1);
-            }
+            string pattern = Regex.Escape(badWord);
+            result = Regex.Replace(result, pattern, m => new string('*', m.Length), RegexOptions.IgnoreCase);
         }
 
-        return string.Join(" ", words);
+        return result;
     }
 
     public async Task<(bool IsSpam, string Reason)> DetectSpam(string title, string content)
     {
         var blacklist = await GetBlacklistAsync();
+        string fullText = (title + " " + content).ToLowerInvariant();
 
-        var titleCheck = CheckWords(title, blacklist);
-        if (titleCheck.IsFound) return (true, titleCheck.Word);
-
-        var contentCheck = CheckWords(content, blacklist);
-        if (contentCheck.IsFound) return (true, contentCheck.Word);
+        foreach (var badWord in blacklist)
+        {
+            if (fullText.Contains(badWord))
+            {
+                return (true, badWord);
+            }
+        }
 
         return (false, string.Empty);
     }
 
-    private (bool IsFound, string Word) CheckWords(string input, HashSet<string> blacklist)
+    public async Task<int?> GetActiveSpamIdForUser(int userId, int? topicId)
     {
-        if (string.IsNullOrWhiteSpace(input)) return (false, string.Empty);
+        return await _context.ForumSpamLogs
+            .Where(l => l.UserId == userId && l.TopicId == topicId && !l.IsHandled && l.RelatedSpamId == null)
+            .OrderByDescending(l => l.CreatedAt)
+            .Select(l => (int?)l.Id)
+            .FirstOrDefaultAsync();
+    }
 
-        var words = input.Split(' ');
-        foreach (var word in words)
+    public async Task LogSpam(int userId, string type, string content, string word, int? topicId, int? postId, int? relatedId = null)
+    {
+        var log = new ForumSpamLog
         {
-            var cleanWord = word.Trim('.', ',', '!', '?', '(', ')', '\n', '\r');
-            if (blacklist.Contains(cleanWord)) return (true, cleanWord);
-        }
-        return (false, string.Empty);
+            UserId = userId,
+            Type = type,
+            Content = content,
+            CaughtWord = word,
+            TopicId = topicId,
+            PostId = postId,
+            CreatedAt = DateTime.UtcNow,
+            IsHandled = false,
+            RelatedSpamId = relatedId
+        };
+
+        _context.ForumSpamLogs.Add(log);
+        await _context.SaveChangesAsync();
     }
 }

@@ -390,6 +390,9 @@ namespace SilverSet.Migrations
                     b.Property<int?>("PostId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("RelatedSpamId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("TopicId")
                         .HasColumnType("int");
 
@@ -403,6 +406,8 @@ namespace SilverSet.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("PostId");
+
+                    b.HasIndex("RelatedSpamId");
 
                     b.HasIndex("TopicId");
 
@@ -735,6 +740,10 @@ namespace SilverSet.Migrations
                         .WithMany()
                         .HasForeignKey("PostId");
 
+                    b.HasOne("SilverSet.Models.Entities.Forum.ForumSpamLog", "RelatedSpam")
+                        .WithMany("SecondaryLogs")
+                        .HasForeignKey("RelatedSpamId");
+
                     b.HasOne("SilverSet.Models.Entities.Forum.ForumTopic", "Topic")
                         .WithMany()
                         .HasForeignKey("TopicId");
@@ -746,6 +755,8 @@ namespace SilverSet.Migrations
                         .IsRequired();
 
                     b.Navigation("Post");
+
+                    b.Navigation("RelatedSpam");
 
                     b.Navigation("Topic");
 
@@ -820,6 +831,11 @@ namespace SilverSet.Migrations
             modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumPost", b =>
                 {
                     b.Navigation("Replies");
+                });
+
+            modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumSpamLog", b =>
+                {
+                    b.Navigation("SecondaryLogs");
                 });
 
             modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumTopic", b =>

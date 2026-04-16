@@ -123,7 +123,7 @@ public class ForumController : Controller
 
     public async Task<IActionResult> Topic(int id, int page = 1)
     {
-        int pageSize = 10;
+        int pageSize = 20;
         var topic = await _context.ForumTopics
             .Include(t => t.User)
             .Include(t => t.Category)
@@ -188,57 +188,52 @@ public class ForumController : Controller
         }
 
         var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Unauthorized();
 
-        if (!User.IsInRole("Admin"))
+        var spamCheck = await _profanityService.DetectSpam(title, content);
+        title = await _profanityService.FilterText(title);
+        content = await _profanityService.FilterText(content);
+
+        var activeSpamId = await _profanityService.GetActiveSpamIdForUser(user.Id, null);
+        bool forceApproval = user.ForcePostApproval || spamCheck.IsSpam;
+
+        if (spamCheck.IsSpam && !user.ForcePostApproval)
         {
-            var pendingActivityCount = await _context.ForumTopics.CountAsync(t => t.UserId == user!.Id && !t.IsApproved)
-                                     + await _context.ForumPosts.CountAsync(p => p.UserId == user!.Id && !p.IsApproved);
-
-            if (pendingActivityCount >= 5)
-            {
-                TempData["Error"] = "You have reached the maximum limit of pending contents (5). Please wait for moderator approval to post again.";
-                TempData["DraftTitle"] = title;
-                TempData["DraftContent"] = content;
-                return RedirectToAction(nameof(Category), new { id = categoryId });
-            }
-
-            var oneMinuteAgo = DateTime.UtcNow.AddMinutes(-1);
-            var recentActivityCount = await _context.ForumTopics.CountAsync(t => t.UserId == user!.Id && t.CreatedAt >= oneMinuteAgo)
-                                    + await _context.ForumPosts.CountAsync(p => p.UserId == user!.Id && p.CreatedAt >= oneMinuteAgo);
-
-            if (recentActivityCount >= 2)
-            {
-                TempData["Error"] = "You are posting too fast! Please wait a minute before posting again.";
-                TempData["DraftTitle"] = title;
-                TempData["DraftContent"] = content;
-                return RedirectToAction(nameof(CreateTopic), new { categoryId });
-            }
+            user.ForcePostApproval = true;
+            await _userManager.UpdateAsync(user);
         }
-
-        var threshold = await _settingsService.GetShadowPostLimit();
-        var approvedActivityCount = await _context.ForumPosts.CountAsync(p => p.UserId == user!.Id && p.IsApproved)
-                                  + await _context.ForumTopics.CountAsync(t => t.UserId == user!.Id && t.IsApproved);
 
         var topic = new ForumTopic
         {
             Title = title.Trim(),
             Content = content.Trim(),
             CategoryId = categoryId,
-            UserId = user!.Id,
+            UserId = user.Id,
             CreatedAt = DateTime.UtcNow,
-            IsApproved = User.IsInRole("Admin") || threshold == 0 || approvedActivityCount >= threshold
+            IsApproved = !forceApproval && User.IsInRole("Admin")
         };
+
+        if (!forceApproval)
+        {
+            var threshold = await _settingsService.GetShadowPostLimit();
+            var approvedCount = await _context.ForumPosts.CountAsync(p => p.UserId == user.Id && p.IsApproved)
+                              + await _context.ForumTopics.CountAsync(t => t.UserId == user.Id && t.IsApproved);
+            topic.IsApproved = User.IsInRole("Admin") || threshold == 0 || approvedCount >= threshold;
+        }
 
         _context.ForumTopics.Add(topic);
         await _context.SaveChangesAsync();
 
-        if (!topic.IsApproved)
+        if (spamCheck.IsSpam)
         {
-            TempData["Info"] = "Your topic is awaiting moderator approval.";
-            return RedirectToAction(nameof(Category), new { id = categoryId });
+            await _profanityService.LogSpam(user.Id, "Topic", content, spamCheck.Reason, topic.Id, null, activeSpamId);
+        }
+        else if (user.ForcePostApproval)
+        {
+            await _profanityService.LogSpam(user.Id, "Restricted", content, "DENETIM", topic.Id, null, activeSpamId);
         }
 
-        return RedirectToAction(nameof(Topic), new { id = topic.Id });
+        return topic.IsApproved ? RedirectToAction(nameof(Topic), new { id = topic.Id }) : RedirectToAction(nameof(Category), new { id = categoryId });
     }
 
     [HttpPost]
@@ -251,61 +246,53 @@ public class ForumController : Controller
         var topic = await _context.ForumTopics.FindAsync(topicId);
         if (topic == null || topic.IsLocked) return BadRequest();
 
-        if (string.IsNullOrWhiteSpace(content))
-        {
-            TempData["DraftContent"] = content;
-            return RedirectToAction(nameof(Topic), new { id = topicId });
-        }
-
         var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Unauthorized();
 
-        if (!User.IsInRole("Admin"))
+        var spamCheck = await _profanityService.DetectSpam(string.Empty, content);
+        content = await _profanityService.FilterText(content);
+
+        var activeSpamId = await _profanityService.GetActiveSpamIdForUser(user.Id, topicId);
+        bool forceApproval = user.ForcePostApproval || spamCheck.IsSpam;
+
+        if (spamCheck.IsSpam && !user.ForcePostApproval)
         {
-            var pendingActivityCount = await _context.ForumTopics.CountAsync(t => t.UserId == user!.Id && !t.IsApproved)
-                                     + await _context.ForumPosts.CountAsync(p => p.UserId == user!.Id && !p.IsApproved);
-
-            if (pendingActivityCount >= 5)
-            {
-                TempData["Error"] = "You have reached the maximum limit of pending contents (5). Please wait for moderator approval to post again.";
-                TempData["DraftContent"] = content;
-                return RedirectToAction(nameof(Topic), new { id = topicId });
-            }
-
-            var oneMinuteAgo = DateTime.UtcNow.AddMinutes(-1);
-            var recentActivityCount = await _context.ForumTopics.CountAsync(t => t.UserId == user!.Id && t.CreatedAt >= oneMinuteAgo)
-                                    + await _context.ForumPosts.CountAsync(p => p.UserId == user!.Id && p.CreatedAt >= oneMinuteAgo);
-
-            if (recentActivityCount >= 2)
-            {
-                TempData["Error"] = "You are posting too fast! Please wait a minute before replying again.";
-                TempData["DraftContent"] = content;
-                return RedirectToAction(nameof(Topic), new { id = topicId });
-            }
+            user.ForcePostApproval = true;
+            await _userManager.UpdateAsync(user);
         }
-
-        var threshold = await _settingsService.GetShadowPostLimit();
-        var approvedActivityCount = await _context.ForumPosts.CountAsync(p => p.UserId == user!.Id && p.IsApproved)
-                                  + await _context.ForumTopics.CountAsync(t => t.UserId == user!.Id && t.IsApproved);
 
         var post = new ForumPost
         {
             Content = content.Trim(),
             TopicId = topicId,
-            UserId = user!.Id,
-            ParentPostId = null,
+            UserId = user.Id,
             CreatedAt = DateTime.UtcNow,
-            IsApproved = User.IsInRole("Admin") || threshold == 0 || approvedActivityCount >= threshold
+            IsApproved = !forceApproval && User.IsInRole("Admin")
         };
+
+        if (!forceApproval)
+        {
+            var threshold = await _settingsService.GetShadowPostLimit();
+            var approvedCount = await _context.ForumPosts.CountAsync(p => p.UserId == user.Id && p.IsApproved)
+                              + await _context.ForumTopics.CountAsync(t => t.UserId == user.Id && t.IsApproved);
+            post.IsApproved = User.IsInRole("Admin") || threshold == 0 || approvedCount >= threshold;
+        }
 
         _context.ForumPosts.Add(post);
         await _context.SaveChangesAsync();
 
-        if (!post.IsApproved)
+        if (spamCheck.IsSpam)
         {
-            TempData["Info"] = "Your post is awaiting moderator approval.";
+            await _profanityService.LogSpam(user.Id, "Post", content, spamCheck.Reason, topicId, post.Id, activeSpamId);
+        }
+        else if (user.ForcePostApproval)
+        {
+            await _profanityService.LogSpam(user.Id, "Restricted", content, "DENETIM", topicId, post.Id, activeSpamId);
         }
 
-        return RedirectToAction(nameof(Topic), new { id = topicId });
+        var totalPosts = await _context.ForumPosts.CountAsync(p => p.TopicId == topicId && (p.IsApproved || p.UserId == user.Id));
+        int targetPage = (int)Math.Ceiling(totalPosts / 20.0);
+        return RedirectToAction(nameof(Topic), new { id = topicId, page = targetPage });
     }
 
     [Authorize(Roles = "Admin")]
@@ -314,60 +301,31 @@ public class ForumController : Controller
         var pendingTopics = await _context.ForumTopics
             .Include(t => t.User)
             .Where(t => !t.IsApproved)
-            .Select(t => new PendingItemViewModel
-            {
-                Id = t.Id,
-                Type = "Topic",
-                Content = t.Content,
-                Title = t.Title,
-                UserName = t.User.UserName,
-                CreatedAt = t.CreatedAt
-            })
+            .Select(t => new PendingItemViewModel { Id = t.Id, Type = "Topic", Content = t.Content, Title = t.Title, UserName = t.User.UserName, CreatedAt = t.CreatedAt })
             .ToListAsync();
 
         var pendingPosts = await _context.ForumPosts
             .Include(p => p.User)
             .Include(p => p.Topic)
             .Where(p => !p.IsApproved)
-            .Select(p => new PendingItemViewModel
-            {
-                Id = p.Id,
-                Type = "Post",
-                Content = p.Content,
-                Title = "Reply to: " + p.Topic.Title,
-                UserName = p.User.UserName,
-                CreatedAt = p.CreatedAt
-            })
+            .Select(p => new PendingItemViewModel { Id = p.Id, Type = "Post", Content = p.Content, Title = "Reply to: " + p.Topic.Title, UserName = p.User.UserName, CreatedAt = p.CreatedAt })
             .ToListAsync();
 
-        var allPending = pendingTopics.Concat(pendingPosts).OrderBy(x => x.CreatedAt).ToList();
-        return View(allPending);
+        return View(pendingTopics.Concat(pendingPosts).OrderBy(x => x.CreatedAt).ToList());
     }
 
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> SpamLogs()
     {
-        var logs = await _context.ForumSpamLogs
-            .Include(l => l.User)
-            .Include(l => l.Topic)
-                .ThenInclude(t => t.Category)
-            .OrderByDescending(l => l.CreatedAt)
-            .ToListAsync();
+        var logs = await _context.ForumSpamLogs.Include(l => l.User).Include(l => l.Topic).ThenInclude(t => t.Category).OrderByDescending(l => l.CreatedAt).ToListAsync();
         return View(logs);
     }
 
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> ModerationView(int topicId)
     {
-        var topic = await _context.ForumTopics
-            .Include(t => t.User)
-            .Include(t => t.Category)
-            .Include(t => t.Posts)
-                .ThenInclude(p => p.User)
-            .FirstOrDefaultAsync(t => t.Id == topicId);
-
+        var topic = await _context.ForumTopics.Include(t => t.User).Include(t => t.Category).Include(t => t.Posts).ThenInclude(p => p.User).FirstOrDefaultAsync(t => t.Id == topicId);
         if (topic == null) return NotFound();
-
         return View(topic);
     }
 
@@ -394,19 +352,47 @@ public class ForumController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ApproveItem(int id, string type)
     {
-        if (type == "Topic")
+        int userId = 0;
+        if (type == "Topic" || type == "[YENİ KONU]")
         {
             var topic = await _context.ForumTopics.FindAsync(id);
-            if (topic != null) topic.IsApproved = true;
+            if (topic != null)
+            {
+                topic.IsApproved = true;
+                userId = topic.UserId;
+                var logs = await _context.ForumSpamLogs.Where(l => l.TopicId == id || l.RelatedSpamId == id).ToListAsync();
+                foreach (var l in logs) l.IsHandled = true;
+            }
         }
         else
         {
             var post = await _context.ForumPosts.FindAsync(id);
-            if (post != null) post.IsApproved = true;
+            if (post != null)
+            {
+                post.IsApproved = true;
+                userId = post.UserId;
+                var logs = await _context.ForumSpamLogs.Where(l => l.PostId == id || l.RelatedSpamId == id).ToListAsync();
+                foreach (var l in logs) l.IsHandled = true;
+            }
         }
 
         await _context.SaveChangesAsync();
-        return RedirectToAction(nameof(PendingApprovals));
+
+        if (userId != 0)
+        {
+            var hasPending = await _context.ForumSpamLogs.AnyAsync(l => l.UserId == userId && !l.IsHandled);
+            if (!hasPending)
+            {
+                var user = await _context.Users.FindAsync(userId);
+                if (user != null)
+                {
+                    user.ForcePostApproval = false;
+                    await _context.SaveChangesAsync();
+                }
+            }
+        }
+
+        return RedirectToAction(nameof(SpamLogs));
     }
 
     [HttpPost]
@@ -414,30 +400,85 @@ public class ForumController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteItem(int id, string type)
     {
-        if (type == "Topic")
+        int userId = 0;
+        if (type == "Topic" || type == "DENETIM" || type == "[YENİ KONU]")
         {
             var topic = await _context.ForumTopics.Include(t => t.Posts).FirstOrDefaultAsync(t => t.Id == id);
             if (topic != null)
             {
+                userId = topic.UserId;
+                var postIds = topic.Posts.Select(p => p.Id).ToList();
+                var topicLogs = await _context.ForumSpamLogs.Where(l => l.TopicId == id || (l.PostId != null && postIds.Contains(l.PostId.Value))).ToListAsync();
+                var topicLogIds = topicLogs.Select(l => l.Id).ToList();
+                var childLogs = await _context.ForumSpamLogs.Where(l => l.RelatedSpamId != null && topicLogIds.Contains(l.RelatedSpamId.Value)).ToListAsync();
+
+                _context.ForumSpamLogs.RemoveRange(childLogs);
+                _context.ForumSpamLogs.RemoveRange(topicLogs);
                 _context.ForumPosts.RemoveRange(topic.Posts);
                 _context.ForumTopics.Remove(topic);
+            }
+            else
+            {
+                var fallback = await _context.ForumSpamLogs.FirstOrDefaultAsync(l => (l.TopicId == id || l.PostId == id) && l.RelatedSpamId == null);
+                if (fallback != null)
+                {
+                    userId = fallback.UserId;
+                    var related = await _context.ForumSpamLogs.Where(l => l.RelatedSpamId == fallback.Id).ToListAsync();
+                    _context.ForumSpamLogs.RemoveRange(related);
+                    _context.ForumSpamLogs.Remove(fallback);
+                }
             }
         }
         else
         {
             var post = await _context.ForumPosts.FindAsync(id);
-            if (post != null) _context.ForumPosts.Remove(post);
+            if (post != null)
+            {
+                userId = post.UserId;
+                var postLogs = await _context.ForumSpamLogs.Where(l => l.PostId == id).ToListAsync();
+                var postLogIds = postLogs.Select(l => l.Id).ToList();
+                var childLogs = await _context.ForumSpamLogs.Where(l => l.RelatedSpamId != null && postLogIds.Contains(l.RelatedSpamId.Value)).ToListAsync();
+
+                _context.ForumSpamLogs.RemoveRange(childLogs);
+                _context.ForumSpamLogs.RemoveRange(postLogs);
+                _context.ForumPosts.Remove(post);
+            }
+            else
+            {
+                var fallback = await _context.ForumSpamLogs.FirstOrDefaultAsync(l => l.PostId == id);
+                if (fallback != null)
+                {
+                    userId = fallback.UserId;
+                    var related = await _context.ForumSpamLogs.Where(l => l.RelatedSpamId == fallback.Id).ToListAsync();
+                    _context.ForumSpamLogs.RemoveRange(related);
+                    _context.ForumSpamLogs.Remove(fallback);
+                }
+            }
         }
+
         await _context.SaveChangesAsync();
-        return RedirectToAction(nameof(PendingApprovals));
+
+        if (userId != 0)
+        {
+            var hasPending = await _context.ForumSpamLogs.AnyAsync(l => l.UserId == userId && !l.IsHandled);
+            if (!hasPending)
+            {
+                var user = await _context.Users.FindAsync(userId);
+                if (user != null)
+                {
+                    user.ForcePostApproval = false;
+                    await _context.SaveChangesAsync();
+                }
+            }
+        }
+
+        return RedirectToAction(nameof(SpamLogs));
     }
 
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> ManageCategories()
     {
-        var categories = await _context.ForumCategories
-            .OrderBy(c => c.Name)
-            .ToListAsync();
+        var categories = await _context.ForumCategories.OrderBy(c => c.Name).ToListAsync();
         return View(categories);
     }
 
@@ -446,16 +487,9 @@ public class ForumController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateCategory(string name, string description)
     {
-        var category = new ForumCategory
-        {
-            Name = name.Trim(),
-            Description = description?.Trim(),
-            IsActive = true
-        };
-
+        var category = new ForumCategory { Name = name.Trim(), Description = description?.Trim(), IsActive = true };
         _context.ForumCategories.Add(category);
         await _context.SaveChangesAsync();
-        TempData["Success"] = "Category created successfully.";
         return RedirectToAction(nameof(ManageCategories));
     }
 
@@ -466,12 +500,9 @@ public class ForumController : Controller
     {
         var category = await _context.ForumCategories.FindAsync(id);
         if (category == null) return NotFound();
-
         category.Name = name.Trim();
         category.Description = description?.Trim();
-
         await _context.SaveChangesAsync();
-        TempData["Success"] = "Category updated successfully.";
         return RedirectToAction(nameof(ManageCategories));
     }
 
@@ -482,7 +513,6 @@ public class ForumController : Controller
     {
         var category = await _context.ForumCategories.FindAsync(id);
         if (category == null) return NotFound();
-
         category.IsActive = !category.IsActive;
         await _context.SaveChangesAsync();
         return RedirectToAction(nameof(ManageCategories));
@@ -493,27 +523,14 @@ public class ForumController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteCategory(int id)
     {
-        var category = await _context.ForumCategories
-            .Include(c => c.Topics)
-                .ThenInclude(t => t.Posts)
-            .FirstOrDefaultAsync(c => c.Id == id);
-
+        var category = await _context.ForumCategories.Include(c => c.Topics).ThenInclude(t => t.Posts).FirstOrDefaultAsync(c => c.Id == id);
         if (category == null) return NotFound();
-
-        foreach (var topic in category.Topics)
-        {
-            _context.ForumPosts.RemoveRange(topic.Posts);
-        }
+        foreach (var topic in category.Topics) { _context.ForumPosts.RemoveRange(topic.Posts); }
         _context.ForumTopics.RemoveRange(category.Topics);
         _context.ForumCategories.Remove(category);
-
         await _context.SaveChangesAsync();
-        TempData["Success"] = "Category and all related data deleted successfully.";
         return RedirectToAction(nameof(ManageCategories));
     }
 
-    public IActionResult Maintenance()
-    {
-        return View();
-    }
+    public IActionResult Maintenance() { return View(); }
 }
