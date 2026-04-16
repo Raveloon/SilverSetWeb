@@ -54,18 +54,7 @@ public class ProfanityFilterService
 
     public async Task<string> FilterText(string input)
     {
-        if (string.IsNullOrWhiteSpace(input)) return input;
-
-        var blacklist = await GetBlacklistAsync();
-        string result = input;
-
-        foreach (var badWord in blacklist)
-        {
-            string pattern = Regex.Escape(badWord);
-            result = Regex.Replace(result, pattern, m => new string('*', m.Length), RegexOptions.IgnoreCase);
-        }
-
-        return result;
+        return input;
     }
 
     public async Task<(bool IsSpam, string Reason)> DetectSpam(string title, string content)
