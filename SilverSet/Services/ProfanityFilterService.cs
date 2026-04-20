@@ -57,20 +57,35 @@ public class ProfanityFilterService
         return input;
     }
 
-    public async Task<(bool IsSpam, string Reason)> DetectSpam(string title, string content)
+    public async Task<(bool IsSpam, string CaughtWord, bool IsInTitle)> DetectSpam(string title, string content)
     {
         var blacklist = await GetBlacklistAsync();
-        string fullText = (title + " " + content).ToLowerInvariant();
 
-        foreach (var badWord in blacklist)
+        if (!string.IsNullOrWhiteSpace(title))
         {
-            if (fullText.Contains(badWord))
+            string lowerTitle = title.ToLowerInvariant();
+            foreach (var word in blacklist)
             {
-                return (true, badWord);
+                if (lowerTitle.Contains(word))
+                {
+                    return (true, word, true);
+                }
             }
         }
 
-        return (false, string.Empty);
+        if (!string.IsNullOrWhiteSpace(content))
+        {
+            string lowerContent = content.ToLowerInvariant();
+            foreach (var word in blacklist)
+            {
+                if (lowerContent.Contains(word))
+                {
+                    return (true, word, false);
+                }
+            }
+        }
+
+        return (false, string.Empty, false);
     }
 
     public async Task<int?> GetActiveSpamIdForUser(int userId, int? topicId)

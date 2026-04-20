@@ -2,142 +2,231 @@
 @{
     ViewData["Title"] = "İçerik İnceleme";
     Layout = "_Layout";
-    var pendingPosts = Model.Posts.Where(p => !p.IsApproved).ToList();
+
+    // Filtreleme mantığı için pivot tarihini (ilk ihlal anını) buluyoruz
+    // Not: Bu sayfa için ViewBag.SpamLogs üzerinden yakalanan kelimeleri eşleştirebilirsiniz.
+    var firstViolationPost = Model.Posts.OrderBy(p => p.CreatedAt).FirstOrDefault(p => !p.IsApproved);
+    var firstViolationDate = firstViolationPost?.CreatedAt ?? (Model.IsApproved ? DateTime.MaxValue : Model.CreatedAt);
 }
 
 <style>
-    .mod-topic-header {
-        background: #111;
+    .mod-topic-container {
+        background: #0a0a0a;
+        border-radius: 12px;
         border: 1px solid #222;
         padding: 2rem;
-        border-radius: 8px;
-        margin-bottom: 2rem;
     }
 
     .post-card {
-        background: #0d0d0d;
-        border: 1px solid #1a1a1a;
-        border-radius: 6px;
-        padding: 1.5rem;
-        margin-bottom: 1rem;
+        padding: 1.25rem;
+        border-bottom: 1px solid #1a1a1a;
         position: relative;
+        transition: 0.2s;
+        margin-bottom: 5px;
     }
 
-        .post-card.pending {
-            border-left: 4px solid #f59e0b;
-            background: #1a140a;
+        .post-card:last-child {
+            border-bottom: none;
         }
 
-        .post-card.spam-trigger {
-            border-left: 4px solid #ef4444;
-            background: #1a0a0a;
-        }
+    .is-previous {
+        border-left: 4px solid #10b981;
+        background: #06120e;
+    }
 
-    .user-badge {
-        font-size: 0.7rem;
+    .is-violation {
+        border-left: 4px solid #ef4444;
+        background: #1a0a0a;
+    }
+
+    .is-inspection {
+        border-left: 4px solid #f59e0b;
+        background: #1a150a;
+    }
+
+    .type-badge {
+        font-size: 0.65rem;
         font-weight: 800;
-        text-transform: uppercase;
-        padding: 2px 8px;
+        padding: 3px 8px;
         border-radius: 4px;
+        margin-right: 8px;
+        text-transform: uppercase;
     }
 
-    .badge-admin {
+    .badge-previous {
+        background: #10b981;
+        color: white;
+    }
+
+    .badge-violation {
         background: #ef4444;
         color: white;
     }
 
-    .badge-member {
-        background: #333;
-        color: #aaa;
+    .badge-inspection {
+        background: #f59e0b;
+        color: black;
+    }
+
+    .badge-topic-header {
+        background: #4b5563;
+        color: white;
+    }
+
+    .msg-text {
+        color: #eee;
+        font-size: 1rem;
+        margin-top: 0.75rem;
+        word-break: break-all;
+    }
+
+    .action-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 1rem;
+    }
+
+    .btn-xs {
+        padding: 2px 10px;
+        font-size: 0.7rem;
+        font-weight: bold;
     }
 </style>
 
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <a asp-action="SpamLogs" class="btn btn-outline-secondary btn-sm mb-2">
-                <i class="bi bi-arrow-left"></i> Listeye Dön
-            </a>
-            <h2 class="text-white fw-bold">Konu İnceleme: <span class="text-info">@Model.Title</span></h2>
-            <p class="text-muted">Kategori: @Model.Category.Name | Başlatan: @Model.User.UserName</p>
+    <div class="mb-4">
+        <a asp-action="SpamLogs" class="btn btn-outline-secondary btn-sm mb-3">
+            <i class="bi bi-arrow-left"></i> Moderasyon Merkezine Dön
+        </a>
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h2 class="text-white fw-bold">Vaka Analizi: <span class="text-info">@Model.Title</span></h2>
+                <p class="text-muted">Kategori: @Model.Category.Name | Kullanıcı: <strong>@Model.User.UserName</strong></p>
+            </div>
+            <div class="action-panel">
+                <button type="button" class="btn btn-warning btn-sm fw-bold" onclick="openBanModal(@Model.UserId, '@Model.User.UserName')">KULLANICIYI BANLA</button>
+            </div>
         </div>
+    </div>
 
-        @if (pendingPosts.Any() || !Model.IsApproved)
-        {
-            <div class="alert alert-warning d-flex align-items-center gap-3 mb-0">
-                <i class="bi bi-exclamation-triangle fs-4"></i>
+    <div class="mod-topic-container">
+        <h4 class="text-muted small text-uppercase fw-bold mb-4 border-bottom border-secondary pb-2">Zaman Tüneli ve Akış</h4>
+
+        @* --- KONU BAŞLATICI (TOPIC CONTENT) --- *@
+        @{
+            bool topicIsViolation = !Model.IsApproved; // Basit mantık: Onaylı değilse kırmızı/ihlaldir
+            string topicClass = topicIsViolation ? "is-violation" : "is-previous";
+        }
+        <div class="post-card @topicClass">
+            <div class="d-flex justify-content-between align-items-start">
                 <div>
-                    <strong>Bu konuda onay bekleyen içerikler var.</strong>
-                    <div class="small">Kullanıcı şu an denetim altında tutuluyor.</div>
+                    <span class="type-badge @(topicIsViolation ? "badge-violation" : "badge-previous")">
+                        @(topicIsViolation ? "İHLAL: KONU BAŞLATMA" : "TEMİZ: KONU BAŞLATMA")
+                    </span>
+                    <span class="type-badge badge-topic-header">TOPIC: @Model.Title</span>
+                    <span class="text-muted small ms-2">@Model.CreatedAt.ToString("g")</span>
                 </div>
-            </div>
-        }
-    </div>
-
-    <div class="mod-topic-header">
-        <div class="d-flex justify-content-between mb-3">
-            <span class="user-badge @(Model.User.UserName == "admin" ? "badge-admin" : "badge-member")">
-                @Model.User.UserName
-            </span>
-            <span class="text-muted small">@Model.CreatedAt.ToString("g")</span>
-        </div>
-        <div class="text-white fs-5">@Model.Content</div>
-
-        @if (!Model.IsApproved)
-        {
-            <div class="mt-4 pt-3 border-top border-secondary d-flex gap-2">
-                <form asp-action="ApproveItem" method="post">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="id" value="@Model.Id" />
-                    <input type="hidden" name="type" value="Topic" />
-                    <button type="submit" class="btn btn-success btn-sm px-4">KONUYU ONAYLA</button>
-                </form>
-                <form asp-action="DeleteItem" method="post">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="id" value="@Model.Id" />
-                    <input type="hidden" name="type" value="Topic" />
-                    <button type="submit" class="btn btn-danger btn-sm px-4">KONUYU SİL</button>
-                </form>
-            </div>
-        }
-    </div>
-
-    <h4 class="text-muted mb-3 small text-uppercase fw-bold">Mesaj Akışı</h4>
-
-    @foreach (var post in Model.Posts.OrderBy(p => p.CreatedAt))
-    {
-        <div class="post-card @(!post.IsApproved ? "pending" : "")">
-            <div class="d-flex justify-content-between mb-2">
-                <div class="d-flex align-items-center gap-2">
-                    <span class="fw-bold text-white-50">@post.User.UserName</span>
-                    @if (!post.IsApproved)
+                <div class="action-row mt-0">
+                    @if (!Model.IsApproved)
                     {
-                        <span class="badge bg-warning text-dark" style="font-size: 0.6rem;">ONAY BEKLİYOR</span>
+                        <form asp-action="ApproveItem" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <input type="hidden" name="type" value="Topic" />
+                            <button type="submit" class="btn btn-outline-success btn-xs">ONAYLA</button>
+                        </form>
+                        <form asp-action="DeleteItem" method="post" class="d-inline" onsubmit="return confirm('Konuyu silmek üzeresin?')">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <input type="hidden" name="type" value="Topic" />
+                            <button type="submit" class="btn btn-outline-danger btn-xs">SİL</button>
+                        </form>
                     }
                 </div>
-                <span class="text-muted small">@post.CreatedAt.ToString("HH:mm")</span>
             </div>
-
-            <div class="text-white">@post.Content</div>
-
-            @if (!post.IsApproved)
-            {
-                <div class="mt-3 d-flex gap-2">
-                    <form asp-action="ApproveItem" method="post">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="id" value="@post.Id" />
-                        <input type="hidden" name="type" value="Post" />
-                        <button type="submit" class="btn btn-link text-success p-0 text-decoration-none small fw-bold">ONAYLA</button>
-                    </form>
-                    <span class="text-muted">|</span>
-                    <form asp-action="DeleteItem" method="post">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="id" value="@post.Id" />
-                        <input type="hidden" name="type" value="Post" />
-                        <button type="submit" class="btn btn-link text-danger p-0 text-decoration-none small fw-bold">SİL</button>
-                    </form>
-                </div>
-            }
+            <div class="msg-text fw-bold border-start border-info ps-3 mt-3">@Model.Content</div>
         </div>
-    }
+
+        @* --- CEVAPLAR (POSTS) --- *@
+        @foreach (var post in Model.Posts.OrderBy(p => p.CreatedAt))
+        {
+            var isViolation = !post.IsApproved; // Şu anki DB durumuna göre onaylanmamışsa ihlaldir
+            var isPrevious = post.CreatedAt < firstViolationDate;
+            var isInspection = !isViolation && post.CreatedAt >= firstViolationDate && !post.IsApproved; // Onaysız ama ihlal değilse (Shadow Ban)
+
+            // Görsel Sınıf Belirleme
+            string postClass = isViolation ? "is-violation" : (isPrevious ? "is-previous" : "is-inspection");
+
+            <div class="post-card @postClass">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        @if (isViolation)
+                        {
+                            <span class="type-badge badge-violation">İHLAL TESPİTİ</span>
+                        }
+                        else if (isPrevious)
+                        {
+                            <span class="type-badge badge-previous">ÖNCEKİ YAZIŞMA</span>
+                        }
+                        else
+                        {
+                            <span class="type-badge badge-inspection">DENETİM</span>
+                        }
+                        <span class="text-muted small ms-2">@post.CreatedAt.ToString("HH:mm")</span>
+                    </div>
+
+                    <div class="action-row mt-0">
+                        @if (!post.IsApproved)
+                        {
+                            <form asp-action="ApproveItem" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@post.Id" />
+                                <input type="hidden" name="type" value="Post" />
+                                <button type="submit" class="btn btn-outline-success btn-xs">ONAYLA</button>
+                            </form>
+                            <form asp-action="DeleteItem" method="post" class="d-inline" onsubmit="return confirm('Mesajı silmek istediğine emin misin?')">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@post.Id" />
+                                <input type="hidden" name="type" value="Post" />
+                                <button type="submit" class="btn btn-outline-danger btn-xs">SİL</button>
+                            </form>
+                        }
+                    </div>
+                </div>
+                <div class="msg-text">@post.Content</div>
+            </div>
+        }
+    </div>
 </div>
+
+@* Ban Modal Altyapısı *@
+<div class="modal fade" id="banModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-secondary">
+            <form asp-action="BanUserFromForum" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="userId" id="banUserId" />
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-white">Operatör Askıya Alma: <span id="banUserName"></span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <textarea name="banReason" class="form-control bg-black border-secondary text-white" rows="3" required placeholder="Neden banlıyorsun?"></textarea>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="submit" class="btn btn-danger fw-bold w-100">SİSTEMDEN MEN ET</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openBanModal(id, name) {
+            document.getElementById('banUserId').value = id;
+            document.getElementById('banUserName').innerText = name;
+            new bootstrap.Modal(document.getElementById('banModal')).show();
+        }
+    </script>
+}
