@@ -45,10 +45,27 @@ public class ForumController : Controller
     [HttpGet]
     public async Task<IActionResult> PendingApprovals()
     {
-        var unhandledSpamPostIds = await _context.ForumSpamLogs.Where(l => !l.IsHandled && l.PostId.HasValue).Select(l => l.PostId).ToListAsync();
-        var unhandledSpamTopicIds = await _context.ForumSpamLogs.Where(l => !l.IsHandled && l.TopicId.HasValue && l.PostId == null).Select(l => l.TopicId).ToListAsync();
-        var pendingTopics = await _context.ForumTopics.Include(t => t.User).Where(t => !t.IsApproved && !unhandledSpamTopicIds.Contains(t.Id)).Select(t => new PendingItemViewModel { Id = t.Id, Type = "Topic", Title = t.Title, Content = t.Content, UserName = t.User.UserName, CreatedAt = t.CreatedAt }).ToListAsync();
-        var pendingPosts = await _context.ForumPosts.Include(p => p.User).Include(p => p.Topic).Where(p => !p.IsApproved && !unhandledSpamPostIds.Contains(p.Id)).Select(p => new PendingItemViewModel { Id = p.Id, Type = "Post", Title = "Reply: " + p.Topic.Title, Content = p.Content, UserName = p.User.UserName, CreatedAt = p.CreatedAt }).ToListAsync();
+        var spamLogData = await _context.ForumSpamLogs
+            .Where(l => !l.IsHandled)
+            .Select(l => new { l.TopicId, l.PostId })
+            .ToListAsync();
+
+        var spamTopicIds = spamLogData.Where(x => x.TopicId.HasValue).Select(x => x.TopicId!.Value).Distinct().ToList();
+        var spamPostIds = spamLogData.Where(x => x.PostId.HasValue).Select(x => x.PostId!.Value).Distinct().ToList();
+
+        var pendingTopics = await _context.ForumTopics
+            .Include(t => t.User)
+            .Where(t => !t.IsApproved && !spamTopicIds.Contains(t.Id))
+            .Select(t => new PendingItemViewModel { Id = t.Id, Type = "Topic", Title = t.Title, Content = t.Content, UserName = t.User.UserName, CreatedAt = t.CreatedAt })
+            .ToListAsync();
+
+        var pendingPosts = await _context.ForumPosts
+            .Include(p => p.User)
+            .Include(p => p.Topic)
+            .Where(p => !p.IsApproved && !spamPostIds.Contains(p.Id))
+            .Select(p => new PendingItemViewModel { Id = p.Id, Type = "Post", Title = "Reply: " + p.Topic.Title, Content = p.Content, UserName = p.User.UserName, CreatedAt = p.CreatedAt })
+            .ToListAsync();
+
         return View(pendingTopics.Concat(pendingPosts).OrderBy(x => x.CreatedAt).ToList());
     }
 
@@ -215,13 +232,18 @@ public class ForumController : Controller
         return RedirectToReferer();
     }
 
-    private IActionResult RedirectToReferer() { string referer = Request.Headers["Referer"].ToString(); if (string.IsNullOrEmpty(referer)) return RedirectToAction(nameof(SpamLogs)); return Redirect(referer); }
+    private IActionResult RedirectToReferer()
+    {
+        string referer = Request.Headers["Referer"].ToString();
+        if (string.IsNullOrEmpty(referer)) return RedirectToAction(nameof(SpamLogs));
+        return Redirect(referer);
+    }
 
     [HttpGet]
     public async Task<IActionResult> ModerationView(int topicId)
     {
         var topic = await _context.ForumTopics.Include(t => t.User).Include(t => t.Category).Include(t => t.Posts).ThenInclude(p => p.User).FirstOrDefaultAsync(t => t.Id == topicId);
-        if (topic == null) return NotFound();
+        if (topic == null) return RedirectToAction(nameof(SpamLogs));
         ViewBag.TopicLogs = await _context.ForumSpamLogs.Where(l => l.TopicId == topicId).ToListAsync();
         return View(topic);
     }

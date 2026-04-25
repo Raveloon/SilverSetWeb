@@ -26,19 +26,21 @@ public class AdminNotificationFilter : IAsyncActionFilter
             controller.ViewBag.SpamTicketCount = await _context.Tickets
                 .CountAsync(t => t.IsSpam);
 
-            var unhandledSpamTopicIds = _context.ForumSpamLogs
-                .Where(l => !l.IsHandled && l.TopicId.HasValue && l.PostId == null)
-                .Select(l => l.TopicId!.Value);
+            var allSpamTopicIds = await _context.ForumSpamLogs
+                .Where(l => !l.IsHandled && l.TopicId.HasValue)
+                .Select(l => l.TopicId!.Value)
+                .ToListAsync();
 
-            var unhandledSpamPostIds = _context.ForumSpamLogs
+            var allSpamPostIds = await _context.ForumSpamLogs
                 .Where(l => !l.IsHandled && l.PostId.HasValue)
-                .Select(l => l.PostId!.Value);
+                .Select(l => l.PostId!.Value)
+                .ToListAsync();
 
             int pendingTopics = await _context.ForumTopics
-                .CountAsync(t => !t.IsApproved && !unhandledSpamTopicIds.Contains(t.Id));
+                .CountAsync(t => !t.IsApproved && !allSpamTopicIds.Contains(t.Id));
 
             int pendingPosts = await _context.ForumPosts
-                .CountAsync(p => !p.IsApproved && !unhandledSpamPostIds.Contains(p.Id));
+                .CountAsync(p => !p.IsApproved && !allSpamPostIds.Contains(p.Id));
 
             controller.ViewBag.ForumApprovalCount = pendingTopics + pendingPosts;
 
