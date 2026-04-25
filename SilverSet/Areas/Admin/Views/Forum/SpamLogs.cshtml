@@ -1,12 +1,17 @@
 ﻿@model IEnumerable<SilverSet.Models.Entities.Forum.ForumSpamLog>
 @using Microsoft.EntityFrameworkCore
 @{
-    ViewData["Title"] = "Forum Spam Control";
+    ViewData["Title"] = "Forum Moderasyon Merkezi";
     Layout = "_Layout";
     var userGroups = Model.Where(l => !l.IsHandled).GroupBy(l => l.UserId).ToList();
 }
 
 <style>
+    body {
+        background-color: #050505;
+        color: #eee;
+    }
+
     .user-wrapper {
         background: #0a0a0a;
         border: 1px solid #222;
@@ -24,7 +29,7 @@
         justify-content: space-between;
     }
 
-    .topic-group-box {
+    .topic-card {
         background: #111;
         border: 1px solid #1a1a1a;
         border-radius: 8px;
@@ -32,12 +37,10 @@
         overflow: hidden;
     }
 
-    .topic-group-header {
+    .topic-card-header {
         background: #181818;
         padding: 0.75rem 1.25rem;
         border-bottom: 1px solid #222;
-        font-size: 0.8rem;
-        color: #888;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -54,25 +57,24 @@
             border-bottom: none;
         }
 
+       
         .log-row.is-violation {
             border-left: 4px solid #ef4444;
-            background: #1a0a0a;
+            background: rgba(239, 68, 68, 0.02);
         }
 
         .log-row.is-inspection {
             border-left: 4px solid #f59e0b;
-            background: #1a150a;
+            background: rgba(245, 158, 11, 0.02);
         }
 
     .type-badge {
-        font-size: 0.65rem;
+        font-size: 0.6rem;
         font-weight: 800;
-        padding: 3px 8px;
+        padding: 2px 8px;
         border-radius: 4px;
-        margin-right: 8px;
-        letter-spacing: 0.5px;
         text-transform: uppercase;
-        border: none;
+        letter-spacing: 0.5px;
     }
 
     .badge-violation {
@@ -85,29 +87,23 @@
         color: black !important;
     }
 
-    .badge-topic-title {
-        background: #4b5563;
-        color: white;
-        margin-left: 5px;
-    }
-
     .msg-content {
-        color: #eee;
+        color: #bbb;
         font-size: 0.95rem;
         margin-top: 0.75rem;
         word-break: break-all;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-family: 'Segoe UI', Tahoma, sans-serif;
     }
 
-    .action-panel {
-        display: flex;
-        gap: 8px;
-        align-items: center;
+    .btn-xs {
+        padding: 3px 10px;
+        font-size: 0.65rem;
+        font-weight: bold;
+        text-transform: uppercase;
     }
 
     .clickable-word {
         cursor: pointer;
-        color: #aaa;
         transition: 0.2s;
     }
 
@@ -115,26 +111,19 @@
             color: #fff;
             text-decoration: underline;
         }
-
-    .btn-xs {
-        padding: 2px 8px;
-        font-size: 0.65rem;
-        font-weight: bold;
-        text-transform: uppercase;
-    }
 </style>
 
-<div class="container-fluid py-4">
+<div class="container-fluid py-4" style="max-width: 1200px;">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-white fw-bold"><i class="bi bi-shield-lock me-2"></i>Forum Moderasyon Merkezi</h2>
-        <span class="badge bg-danger px-3 py-2">@userGroups.Count Aktif Operasyon</span>
+        <h2 class="text-white fw-bold"><i class="bi bi-shield-shaded me-2 text-danger"></i>MODERASYON MERKEZİ</h2>
+        <span class="badge bg-danger px-3 py-2">@userGroups.Count AKTİF TAKİP</span>
     </div>
 
     @if (!userGroups.Any())
     {
         <div class="alert alert-dark text-center py-5 border-secondary">
-            <i class="bi bi-shield-check fs-1 d-block mb-3 opacity-50"></i>
-            Sistem temiz. Bekleyen ihlal kaydı bulunamadı.
+            <i class="bi bi-shield-check fs-1 d-block mb-3 opacity-50 text-success"></i>
+            Sistem temiz. İncelenecek ihlal kaydı bulunamadı.
         </div>
     }
 
@@ -144,20 +133,20 @@
         <div class="user-wrapper">
             <div class="user-identity">
                 <h4 class="text-white mb-0">
-                    <i class="bi bi-person-circle me-2 text-primary"></i>@firstLog.User.UserName
+                    <i class="bi bi-person-badge me-2 text-primary"></i>@firstLog.User.UserName
                 </h4>
-                <div class="action-panel">
-                    <form asp-area="Admin" asp-controller="Forum" asp-action="ApproveAllUserLogs" method="post" class="d-inline">
+                <div class="action-panel d-flex gap-2">
+                    <form asp-area="Admin" asp-controller="Forum" asp-action="ApproveAllUserLogs" method="post">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="userId" value="@userGroup.Key" />
-                        <button type="submit" class="btn btn-success btn-sm fw-bold">TÜMÜNÜ ONAYLA</button>
+                        <button type="submit" class="btn btn-success btn-xs">TÜMÜNÜ ONAYLA</button>
                     </form>
-                    <form asp-area="Admin" asp-controller="Forum" asp-action="DeleteAllUserLogs" method="post" class="d-inline" onsubmit="return confirm('Kullanıcının bütün mesajlaşmasını sileceksin emin misin?')">
+                    <form asp-area="Admin" asp-controller="Forum" asp-action="DeleteAllUserLogs" method="post" onsubmit="return confirm('Kullanıcının bütün mesajlaşmasını sileceksin emin misin?')">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="userId" value="@userGroup.Key" />
-                        <button type="submit" class="btn btn-danger btn-sm fw-bold">TÜMÜNÜ SİL</button>
+                        <button type="submit" class="btn btn-danger btn-xs">TÜMÜNÜ SİL</button>
                     </form>
-                    <button type="button" class="btn btn-warning btn-sm fw-bold" onclick="openBanModal(@userGroup.Key, '@firstLog.User.UserName')">BANLA</button>
+                    <button type="button" class="btn btn-warning btn-xs" onclick="openBanModal(@userGroup.Key, '@firstLog.User.UserName')">BANLA</button>
                 </div>
             </div>
 
@@ -167,33 +156,18 @@
                 bool isTopicStarter = topicInfo != null && topicInfo.UserId == userGroup.Key;
                 int postCount = topicInfo?.Posts?.Count ?? 0;
 
-                <div class="topic-group-box">
-                    <div class="topic-group-header">
-                        <div>
-                            <i class="bi bi-chat-left-text me-2"></i>
-                            @(topicInfo?.Category?.Name ?? "Genel") / <strong>@(topicInfo?.Title ?? "Başlıksız")</strong>
+                <div class="topic-card">
+                    <div class="topic-card-header">
+                        <div class="text-muted small">
+                            <i class="bi bi-chat-left-dots me-2"></i>Topic: <strong class="text-white">@(topicInfo?.Title ?? "Başlıksız")</strong>
                         </div>
-                        <div class="action-panel">
-                            <a asp-area="Admin" asp-controller="Forum" asp-action="ModerationView" asp-route-topicId="@topicGroup.Key" class="btn btn-outline-info btn-xs">Konuya Git</a>
-                            <form asp-area="Admin" asp-controller="Forum" asp-action="ApproveTopicLogs" method="post" class="d-inline">
+                        <div class="d-flex gap-2">
+                            <a asp-area="Admin" asp-controller="Forum" asp-action="ModerationView" asp-route-topicId="@topicGroup.Key" class="btn btn-outline-info btn-xs">KONUYA GİT</a>
+                            <form asp-area="Admin" asp-controller="Forum" asp-action="ApproveTopicLogs" method="post">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="topicId" value="@topicGroup.Key" />
                                 <input type="hidden" name="userId" value="@userGroup.Key" />
-                                <button type="submit" class="btn btn-outline-success btn-xs">KONUYU ONAYLA</button>
-                            </form>
-                            <form asp-area="Admin" asp-controller="Forum" asp-action="DeleteTopicLogs" method="post" class="d-inline"
-                                  onsubmit="return handleTopicDeletion(this, @isTopicStarter.ToString().ToLower(), @postCount)">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="topicId" value="@topicGroup.Key" />
-                                <input type="hidden" name="userId" value="@userGroup.Key" />
-                                @if (isTopicStarter)
-                                {
-                                    <button type="submit" class="btn btn-danger btn-xs fw-bold">TOPIC'I SİL</button>
-                                }
-                                else
-                                {
-                                    <button type="submit" class="btn btn-outline-danger btn-xs">İÇERİKLERİ SİL</button>
-                                }
+                                <button type="submit" class="btn btn-outline-success btn-xs">ONAYLA</button>
                             </form>
                         </div>
                     </div>
@@ -205,39 +179,26 @@
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <span class="type-badge @(isViolation ? "badge-violation" : "badge-inspection")">
-                                        FİLTRE: @log.CaughtWord
+                                        @(isViolation ? "FİLTRE: " + log.CaughtWord : "DENETİM")
                                     </span>
-                                    @if (log.Type == "TopicTitle")
-                                    {
-                                        <span class="type-badge badge-topic-title">İHLAL: KONU BAŞLIĞI</span>
-                                    }
                                     <span class="text-muted small ms-2">@log.CreatedAt.ToString("HH:mm")</span>
                                 </div>
-
-                                <div class="action-panel">
+                                <div class="action-panel d-flex gap-3">
                                     <form asp-area="Admin" asp-controller="Forum" asp-action="ApproveItem" method="post">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@(log.PostId ?? log.TopicId)" />
                                         <input type="hidden" name="type" value="@log.Type" />
-                                        <button type="submit" class="btn btn-outline-success btn-xs">ONAYLA</button>
+                                        <button type="submit" class="btn btn-link text-success p-0 text-decoration-none fw-bold small" style="font-size:0.7rem">ONAYLA</button>
                                     </form>
-
-                                    <form asp-area="Admin" asp-controller="Forum" asp-action="DeleteItem" method="post" onsubmit="return confirm('Silmek istediğine emin misin?')">
+                                    <form asp-area="Admin" asp-controller="Forum" asp-action="DeleteItem" method="post" onsubmit="return confirm('Silsin mi?')">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@(log.PostId ?? log.TopicId)" />
                                         <input type="hidden" name="type" value="@log.Type" />
-                                        <button type="submit" class="btn btn-outline-danger btn-xs">SİL</button>
+                                        <button type="submit" class="btn btn-link text-danger p-0 text-decoration-none fw-bold small" style="font-size:0.7rem">SİL</button>
                                     </form>
                                 </div>
                             </div>
-
                             <div class="msg-content">
-                                @if (log.Type == "TopicTitle")
-                                {
-                                    <div class="mb-1 text-info small" style="opacity: 0.8;">
-                                        <i class="bi bi-fonts me-1"></i> İhlal içeren başlık: <strong>@log.Topic?.Title</strong>
-                                    </div>
-                                }
                                 @foreach (var word in (log.Content ?? "").Split(' '))
                                 {
                                     <span class="clickable-word" onclick="confirmAddWord('@word.Replace("'", "\\'")')">@word </span>
@@ -258,17 +219,14 @@
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="userId" id="banUserId" />
                 <div class="modal-header border-secondary">
-                    <h5 class="modal-title text-white">Operatör Askıya Alma: <span id="banUserName"></span></h5>
+                    <h5 class="modal-title text-white">Sistemden Men Et: <span id="banUserName" class="text-warning"></span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <label class="text-muted small mb-2">BANLANMA SEBEBİ</label>
-                    <textarea name="banReason" class="form-control bg-black border-secondary text-white" rows="3" required placeholder="İhlal detaylarını yazın..."></textarea>
-                    <p class="text-danger small mt-3"><i class="bi bi-exclamation-triangle me-1"></i> Bu işlem kullanıcının tüm forum ve ticket erişimini kalıcı olarak kapatır.</p>
+                    <textarea name="banReason" class="form-control bg-black border-secondary text-white" rows="3" required placeholder="Neden?"></textarea>
                 </div>
                 <div class="modal-footer border-secondary">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İPTAL</button>
-                    <button type="submit" class="btn btn-danger fw-bold">SİSTEMDEN MEN ET</button>
+                    <button type="submit" class="btn btn-danger btn-sm fw-bold">BANLA</button>
                 </div>
             </form>
         </div>
@@ -282,27 +240,9 @@
             document.getElementById('banUserName').innerText = name;
             new bootstrap.Modal(document.getElementById('banModal')).show();
         }
-
         function confirmAddWord(word) {
-            if (confirm(`'${word}' kelimesini kara listeye eklemek istediğine emin misin?`)) {
-                const token = $('input[name="__RequestVerificationToken"]').val();
-                $.ajax({
-                    url: '@Url.Action("AddBadWord")',
-                    type: 'POST',
-                    data: { word: word, __RequestVerificationToken: token },
-                    success: function() { alert('Kelime eklendi ve önbellek temizlendi.'); location.reload(); }
-                });
-            }
-        }
-
-        function handleTopicDeletion(form, isTopicStarter, postCount) {
-            if (isTopicStarter) {
-                if (confirm(`Topic'i silmek istediğinden emin misin? İçinde ${postCount} mesaj var.`)) {
-                    return confirm(`Topic içerisindeki ${postCount} mesajı yok edeceksiniz.`);
-                }
-                return false;
-            } else {
-                return confirm('Filtreden sonraki içerikler silinecek emin misin?');
+            if (confirm(`'${word}' kelimesini kara listeye ekle?`)) {
+                $.post('@Url.Action("AddBadWord")', { word: word, __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() }, function() { location.reload(); });
             }
         }
     </script>

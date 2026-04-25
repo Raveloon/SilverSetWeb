@@ -25,6 +25,25 @@ public class AdminNotificationFilter : IAsyncActionFilter
 
             controller.ViewBag.SpamTicketCount = await _context.Tickets
                 .CountAsync(t => t.IsSpam);
+
+            var unhandledSpamTopicIds = _context.ForumSpamLogs
+                .Where(l => !l.IsHandled && l.TopicId.HasValue && l.PostId == null)
+                .Select(l => l.TopicId!.Value);
+
+            var unhandledSpamPostIds = _context.ForumSpamLogs
+                .Where(l => !l.IsHandled && l.PostId.HasValue)
+                .Select(l => l.PostId!.Value);
+
+            int pendingTopics = await _context.ForumTopics
+                .CountAsync(t => !t.IsApproved && !unhandledSpamTopicIds.Contains(t.Id));
+
+            int pendingPosts = await _context.ForumPosts
+                .CountAsync(p => !p.IsApproved && !unhandledSpamPostIds.Contains(p.Id));
+
+            controller.ViewBag.ForumApprovalCount = pendingTopics + pendingPosts;
+
+            controller.ViewBag.ForumSpamCount = await _context.ForumSpamLogs
+                .CountAsync(l => !l.IsHandled);
         }
 
         await next();

@@ -384,6 +384,9 @@ namespace SilverSet.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("ForumSpamLogId")
+                        .HasColumnType("int");
+
                     b.Property<bool>("IsHandled")
                         .HasColumnType("bit");
 
@@ -404,6 +407,8 @@ namespace SilverSet.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ForumSpamLogId");
 
                     b.HasIndex("PostId");
 
@@ -736,22 +741,29 @@ namespace SilverSet.Migrations
 
             modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumSpamLog", b =>
                 {
+                    b.HasOne("SilverSet.Models.Entities.Forum.ForumSpamLog", null)
+                        .WithMany("SecondaryLogs")
+                        .HasForeignKey("ForumSpamLogId");
+
                     b.HasOne("SilverSet.Models.Entities.Forum.ForumPost", "Post")
                         .WithMany()
-                        .HasForeignKey("PostId");
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("SilverSet.Models.Entities.Forum.ForumSpamLog", "RelatedSpam")
-                        .WithMany("SecondaryLogs")
-                        .HasForeignKey("RelatedSpamId");
+                        .WithMany()
+                        .HasForeignKey("RelatedSpamId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("SilverSet.Models.Entities.Forum.ForumTopic", "Topic")
                         .WithMany()
-                        .HasForeignKey("TopicId");
+                        .HasForeignKey("TopicId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("SilverSet.Models.Entities.AppUser", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Post");

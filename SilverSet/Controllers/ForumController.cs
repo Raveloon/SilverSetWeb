@@ -103,40 +103,49 @@ public class ForumController : Controller
     {
         if (!string.IsNullOrEmpty(honeyPot)) return RedirectToAction(nameof(Index));
         if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(content)) { return RedirectToAction(nameof(CreateTopic), new { categoryId }); }
+
         var user = await _userManager.GetUserAsync(User);
         if (user == null) return Unauthorized();
+        bool isAdmin = User.IsInRole("Admin");
 
-        
         var (isSpam, caughtWord, isInTitle) = await _profanityService.DetectSpam(title, content);
 
-        var activeSpamId = await _profanityService.GetActiveSpamIdForUser(user.Id, null);
-        bool forceApproval = user.ForcePostApproval || isSpam;
-
-        if (isSpam && !user.ForcePostApproval)
+        if (isSpam && !isAdmin && !user.ForcePostApproval)
         {
             user.ForcePostApproval = true;
             await _userManager.UpdateAsync(user);
         }
 
-        var topic = new ForumTopic { Title = title.Trim(), Content = content.Trim(), CategoryId = categoryId, UserId = user.Id, CreatedAt = DateTime.UtcNow, IsApproved = !forceApproval && User.IsInRole("Admin") };
+        bool forceApproval = !isAdmin && (isSpam || user.ForcePostApproval);
 
-        if (!forceApproval)
+        var topic = new ForumTopic
+        {
+            Title = title.Trim(),
+            Content = content.Trim(),
+            CategoryId = categoryId,
+            UserId = user.Id,
+            CreatedAt = DateTime.UtcNow,
+            IsApproved = isAdmin
+        };
+
+        if (!isAdmin && !forceApproval)
         {
             var threshold = await _settingsService.GetShadowPostLimit();
             var approvedCount = await _context.ForumPosts.CountAsync(p => p.UserId == user.Id && p.IsApproved) + await _context.ForumTopics.CountAsync(t => t.UserId == user.Id && t.IsApproved);
-            topic.IsApproved = User.IsInRole("Admin") || threshold == 0 || approvedCount >= threshold;
+            topic.IsApproved = threshold == 0 || approvedCount >= threshold;
         }
 
         _context.ForumTopics.Add(topic);
         await _context.SaveChangesAsync();
 
-        if (isSpam)
+        var activeSpamId = await _profanityService.GetActiveSpamIdForUser(user.Id, null);
+
+        if (isSpam && !isAdmin)
         {
-            // Eğer ihlal başlıktaysa log tipini "TopicTitle" (Gri Etiket) yapıyoruz
             string logType = isInTitle ? "TopicTitle" : "Topic";
             await _profanityService.LogSpam(user.Id, logType, content, caughtWord, topic.Id, null, activeSpamId);
         }
-        else if (user.ForcePostApproval)
+        else if (user.ForcePostApproval && !isAdmin)
         {
             await _profanityService.LogSpam(user.Id, "Restricted", content, "DENETIM", topic.Id, null, activeSpamId);
         }
@@ -152,45 +161,50 @@ public class ForumController : Controller
         if (!string.IsNullOrEmpty(honeyPot)) return RedirectToAction(nameof(Index));
         var topic = await _context.ForumTopics.FindAsync(topicId);
         if (topic == null || topic.IsLocked) return BadRequest();
+
         var user = await _userManager.GetUserAsync(User);
         if (user == null) return Unauthorized();
+        bool isAdmin = User.IsInRole("Admin");
 
-        // Mesajlarda başlık olmadığı için isInTitle her zaman false döner
         var (isSpam, caughtWord, _) = await _profanityService.DetectSpam(string.Empty, content);
 
-        var activeSpamId = await _profanityService.GetActiveSpamIdForUser(user.Id, topicId);
-        bool forceApproval = user.ForcePostApproval || isSpam;
-
-        if (isSpam && !user.ForcePostApproval)
+        if (isSpam && !isAdmin && !user.ForcePostApproval)
         {
             user.ForcePostApproval = true;
             await _userManager.UpdateAsync(user);
         }
 
-        var post = new ForumPost { Content = content.Trim(), TopicId = topicId, UserId = user.Id, CreatedAt = DateTime.UtcNow, IsApproved = !forceApproval && User.IsInRole("Admin") };
+        bool forceApproval = !isAdmin && (isSpam || user.ForcePostApproval);
 
-        if (!forceApproval)
+        var post = new ForumPost
+        {
+            Content = content.Trim(),
+            TopicId = topicId,
+            UserId = user.Id,
+            CreatedAt = DateTime.UtcNow,
+            IsApproved = isAdmin,
+            ParentPostId = parentPostId
+        };
+
+        if (!isAdmin && !forceApproval)
         {
             var threshold = await _settingsService.GetShadowPostLimit();
             var approvedCount = await _context.ForumPosts.CountAsync(p => p.UserId == user.Id && p.IsApproved) + await _context.ForumTopics.CountAsync(t => t.UserId == user.Id && t.IsApproved);
-            post.IsApproved = User.IsInRole("Admin") || threshold == 0 || approvedCount >= threshold;
+            post.IsApproved = threshold == 0 || approvedCount >= threshold;
         }
 
         _context.ForumPosts.Add(post);
         await _context.SaveChangesAsync();
 
-        if (isSpam) await _profanityService.LogSpam(user.Id, "Post", content, caughtWord, topicId, post.Id, activeSpamId);
-        else if (user.ForcePostApproval) await _profanityService.LogSpam(user.Id, "Restricted", content, "DENETIM", topicId, post.Id, activeSpamId);
+        var activeSpamId = await _profanityService.GetActiveSpamIdForUser(user.Id, topicId);
+
+        if (isSpam && !isAdmin) await _profanityService.LogSpam(user.Id, "Post", content, caughtWord, topicId, post.Id, activeSpamId);
+        else if (user.ForcePostApproval && !isAdmin) await _profanityService.LogSpam(user.Id, "Restricted", content, "DENETIM", topicId, post.Id, activeSpamId);
 
         var totalPosts = await _context.ForumPosts.CountAsync(p => p.TopicId == topicId && (p.IsApproved || p.UserId == user.Id));
         int targetPage = (int)Math.Ceiling(totalPosts / 20.0);
         return RedirectToAction(nameof(Topic), new { id = topicId, page = targetPage < 1 ? 1 : targetPage });
     }
 
-    // ... Diğer Admin metodları değişmeden kalıyor ...
-    [Authorize(Roles = "Admin")] public async Task<IActionResult> PendingApprovals() { var pTopics = await _context.ForumTopics.Include(t => t.User).Where(t => !t.IsApproved).Select(t => new PendingItemViewModel { Id = t.Id, Type = "Topic", Content = t.Content, Title = t.Title, UserName = t.User.UserName, CreatedAt = t.CreatedAt }).ToListAsync(); var pPosts = await _context.ForumPosts.Include(p => p.User).Include(p => p.Topic).Where(p => !p.IsApproved).Select(p => new PendingItemViewModel { Id = p.Id, Type = "Post", Content = p.Content, Title = "Reply to: " + p.Topic.Title, UserName = p.User.UserName, CreatedAt = p.CreatedAt }).ToListAsync(); return View(pTopics.Concat(pPosts).OrderBy(x => x.CreatedAt).ToList()); }
-    [Authorize(Roles = "Admin")] public async Task<IActionResult> SpamLogs() { var logs = await _context.ForumSpamLogs.Include(l => l.User).Include(l => l.Topic).ThenInclude(t => t.Category).OrderByDescending(l => l.CreatedAt).ToListAsync(); return View(logs); }
-    [Authorize(Roles = "Admin")] public async Task<IActionResult> ModerationView(int topicId) { var topic = await _context.ForumTopics.Include(t => t.User).Include(t => t.Category).Include(t => t.Posts).ThenInclude(p => p.User).FirstOrDefaultAsync(t => t.Id == topicId); if (topic == null) return NotFound(); return View(topic); }
-    [HttpPost][Authorize(Roles = "Admin")][ValidateAntiForgeryToken] public async Task<IActionResult> AddBadWord(string word) { if (!string.IsNullOrWhiteSpace(word)) { var cleanWord = word.Trim().ToLower(); if (!await _context.BadWords.AnyAsync(b => b.Word == cleanWord)) { _context.BadWords.Add(new BadWord { Word = cleanWord }); await _context.SaveChangesAsync(); _profanityService.ClearCache(); } } return Ok(); }
     public IActionResult Maintenance() { return View(); }
 }

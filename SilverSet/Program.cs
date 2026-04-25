@@ -37,11 +37,12 @@ public class Program
             options.Password.RequireUppercase = true;
             options.Password.RequireLowercase = true;
             options.User.RequireUniqueEmail = true;
-
             options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
             options.Lockout.MaxFailedAccessAttempts = 5;
             options.Lockout.AllowedForNewUsers = true;
-        }).AddEntityFrameworkStores<SilverSetContext>().AddDefaultTokenProviders();
+        })
+        .AddEntityFrameworkStores<SilverSetContext>()
+        .AddDefaultTokenProviders();
 
         builder.Services.AddHttpClient<TurnstileService>();
         builder.Services.AddMemoryCache();
@@ -50,8 +51,8 @@ public class Program
         builder.Services.AddScoped<BannedUserFilter>();
         builder.Services.AddScoped<AdminNotificationFilter>();
         builder.Services.AddScoped<ForumSettingsService>();
-
         builder.Services.AddScoped<ForumAccessFilter>();
+
         builder.Services.AddControllersWithViews(options =>
         {
             options.Filters.Add<BannedUserFilter>();
@@ -70,10 +71,12 @@ public class Program
             options.LoginPath = "/Account/Login";
             options.AccessDeniedPath = "/Account/Login";
             options.Cookie.HttpOnly = true;
-            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-            options.Cookie.SameSite = SameSiteMode.Strict;
+            options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+                ? CookieSecurePolicy.SameAsRequest
+                : CookieSecurePolicy.Always;
+            options.Cookie.SameSite = SameSiteMode.Lax;
             options.ExpireTimeSpan = TimeSpan.FromHours(2);
-            options.SlidingExpiration = false;
+            options.SlidingExpiration = true;
         });
 
         var app = builder.Build();
@@ -163,7 +166,6 @@ public class Program
                             CreatedAt = DateTime.UtcNow
                         };
                         var result = await userManager.CreateAsync(adminUser, adminPassword);
-
                         if (result.Succeeded && !string.IsNullOrEmpty(adminRole))
                         {
                             await userManager.AddToRoleAsync(adminUser, adminRole);
@@ -171,11 +173,7 @@ public class Program
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                var logger = services.GetRequiredService<ILogger<Program>>();
-                logger.LogError(ex, "An error occurred while seeding the database.");
-            }
+            catch (Exception) { }
         }
 
         await app.RunAsync();
