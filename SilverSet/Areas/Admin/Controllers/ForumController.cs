@@ -21,11 +21,11 @@ public class ForumController : Controller
     private readonly ProfanityFilterService _profanityService;
     private readonly UserManager<AppUser> _userManager;
 
-    public ForumController(ForumSettingsService settingsService, SilverSetContext context, ProfanityFilterService profanityService, UserManager<AppUser> userManager)
+    public ForumController(ForumSettingsService settingsService, SilverSetContext context, ProfanityFilterService profanityFilter, UserManager<AppUser> userManager)
     {
         _settingsService = settingsService;
         _context = context;
-        _profanityService = profanityService;
+        _profanityService = profanityFilter;
         _userManager = userManager;
     }
 
@@ -213,6 +213,9 @@ public class ForumController : Controller
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());
         if (user == null) return NotFound();
+
+        if (await _userManager.IsInRoleAsync(user, "Admin")) return RedirectToReferer();
+
         user.IsBanned = true;
         user.BanReason = banReason?.Trim() ?? "Moderasyon İhlali";
         user.LockoutEnd = DateTimeOffset.MaxValue;
@@ -244,6 +247,12 @@ public class ForumController : Controller
     {
         var topic = await _context.ForumTopics.Include(t => t.User).Include(t => t.Category).Include(t => t.Posts).ThenInclude(p => p.User).FirstOrDefaultAsync(t => t.Id == topicId);
         if (topic == null) return RedirectToAction(nameof(SpamLogs));
+
+        if (topic.User != null)
+        {
+            ViewBag.IsTargetAdmin = await _userManager.IsInRoleAsync(topic.User, "Admin");
+        }
+
         ViewBag.TopicLogs = await _context.ForumSpamLogs.Where(l => l.TopicId == topicId).ToListAsync();
         return View(topic);
     }

@@ -125,7 +125,7 @@ public class ForumController : Controller
             CategoryId = categoryId,
             UserId = user.Id,
             CreatedAt = DateTime.UtcNow,
-            IsApproved = isAdmin
+            IsApproved = isAdmin && !isSpam
         };
 
         if (!isAdmin && !forceApproval)
@@ -140,7 +140,7 @@ public class ForumController : Controller
 
         var activeSpamId = await _profanityService.GetActiveSpamIdForUser(user.Id, null);
 
-        if (isSpam && !isAdmin)
+        if (isSpam)
         {
             string logType = isInTitle ? "TopicTitle" : "Topic";
             await _profanityService.LogSpam(user.Id, logType, content, caughtWord, topic.Id, null, activeSpamId);
@@ -182,7 +182,7 @@ public class ForumController : Controller
             TopicId = topicId,
             UserId = user.Id,
             CreatedAt = DateTime.UtcNow,
-            IsApproved = isAdmin,
+            IsApproved = isAdmin && !isSpam,
             ParentPostId = parentPostId
         };
 
@@ -198,8 +198,14 @@ public class ForumController : Controller
 
         var activeSpamId = await _profanityService.GetActiveSpamIdForUser(user.Id, topicId);
 
-        if (isSpam && !isAdmin) await _profanityService.LogSpam(user.Id, "Post", content, caughtWord, topicId, post.Id, activeSpamId);
-        else if (user.ForcePostApproval && !isAdmin) await _profanityService.LogSpam(user.Id, "Restricted", content, "DENETIM", topicId, post.Id, activeSpamId);
+        if (isSpam)
+        {
+            await _profanityService.LogSpam(user.Id, "Post", content, caughtWord, topicId, post.Id, activeSpamId);
+        }
+        else if (user.ForcePostApproval && !isAdmin)
+        {
+            await _profanityService.LogSpam(user.Id, "Restricted", content, "DENETIM", topicId, post.Id, activeSpamId);
+        }
 
         var totalPosts = await _context.ForumPosts.CountAsync(p => p.TopicId == topicId && (p.IsApproved || p.UserId == user.Id));
         int targetPage = (int)Math.Ceiling(totalPosts / 20.0);

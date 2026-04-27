@@ -24,7 +24,7 @@ public class AdminNotificationFilter : IAsyncActionFilter
                 .CountAsync(t => t.IsOpen && !t.IsSpam);
 
             controller.ViewBag.SpamTicketCount = await _context.Tickets
-                .CountAsync(t => t.IsSpam);
+                .CountAsync(t => t.IsOpen && t.IsSpam);
 
             var allSpamTopicIds = await _context.ForumSpamLogs
                 .Where(l => !l.IsHandled && l.TopicId.HasValue)

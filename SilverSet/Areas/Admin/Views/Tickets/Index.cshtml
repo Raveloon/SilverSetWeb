@@ -235,22 +235,12 @@
                                             @{
                                                 var rawReason = item.SpamReason ?? "";
                                                 string prefix = "MANUAL";
-
-                                                if (rawReason.Contains("Auto-Flag") || rawReason.Contains("Takıldı"))
-                                                {
-                                                    prefix = "FILTERED";
-                                                }
+                                                if (rawReason.Contains("Auto-Flag") || rawReason.Contains("Takıldı")) prefix = "FILTERED";
 
                                                 string cleanReason = rawReason
-                                                .Replace("Auto-Flag:", "")
-                                                .Replace("Manual Flag:", "")
-                                                .Replace("Filtreye Takıldı:", "")
-                                                .Replace("İçerik:", "")
-                                                .Replace("MANUAL :", "")
-                                                .Replace("FILTERED :", "")
-                                                .Trim()
-                                                .TrimStart(':')
-                                                .Trim();
+                                                .Replace("Auto-Flag:", "").Replace("Manual Flag:", "").Replace("Filtreye Takıldı:", "")
+                                                .Replace("İçerik:", "").Replace("MANUAL :", "").Replace("FILTERED :", "")
+                                                .Trim().TrimStart(':').Trim();
 
                                                 if (string.IsNullOrEmpty(cleanReason)) cleanReason = "S";
                                             }

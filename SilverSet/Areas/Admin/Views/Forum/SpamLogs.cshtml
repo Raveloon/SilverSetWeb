@@ -1,5 +1,8 @@
 ﻿@model IEnumerable<SilverSet.Models.Entities.Forum.ForumSpamLog>
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Identity
+@using SilverSet.Models.Entities
+@inject UserManager<AppUser> UserManager
 @{
     ViewData["Title"] = "Forum Moderasyon Merkezi";
     Layout = "_Layout";
@@ -7,25 +10,124 @@
 }
 
 <style>
-    body { background-color: #050505; color: #eee; }
-    .user-wrapper { background: #0a0a0a; border: 1px solid #222; border-radius: 12px; margin-bottom: 3rem; padding: 1.5rem; }
-    .user-identity { border-bottom: 1px solid #333; padding-bottom: 1rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; }
-    .topic-card { background: #111; border: 1px solid #1a1a1a; border-radius: 8px; margin-bottom: 1.5rem; overflow: hidden; }
-    .topic-card-header { background: #181818; padding: 0.75rem 1.25rem; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
-    .log-row { padding: 1rem 1.25rem; border-bottom: 1px solid #1a1a1a; position: relative; transition: 0.2s; }
-    .log-row:last-child { border-bottom: none; }
-    .log-row.is-violation { border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.04); }
-    .log-row.is-inspection { border-left: 4px solid #f59e0b; background: rgba(245, 158, 11, 0.04); }
-    .type-badge { font-size: 0.6rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .badge-violation { background: #ef4444; color: white; }
-    .badge-inspection { background: #f59e0b !important; color: black !important; }
-    .author-info { font-size: 0.75rem; color: #888; margin-bottom: 5px; display: block; font-weight: 600; }
-    .msg-content { color: #e0e0e0; font-size: 1rem; word-break: break-all; font-family: 'Segoe UI', Tahoma, sans-serif; }
-    .btn-xs { padding: 3px 10px; font-size: 0.65rem; font-weight: bold; text-transform: uppercase; }
-    .clickable-word { cursor: pointer; transition: 0.2s; }
-    .clickable-word:hover { color: #fff; text-decoration: underline; }
-    .topic-success { color: #10b981 !important; }
-    .topic-danger { color: #ef4444 !important; }
+    body {
+        background-color: #050505;
+        color: #eee;
+    }
+
+    .user-wrapper {
+        background: #0a0a0a;
+        border: 1px solid #222;
+        border-radius: 12px;
+        margin-bottom: 3rem;
+        padding: 1.5rem;
+    }
+
+    .user-identity {
+        border-bottom: 1px solid #333;
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .topic-card {
+        background: #111;
+        border: 1px solid #1a1a1a;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+    }
+
+    .topic-card-header {
+        background: #181818;
+        padding: 0.75rem 1.25rem;
+        border-bottom: 1px solid #222;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .log-row {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #1a1a1a;
+        position: relative;
+        transition: 0.2s;
+    }
+
+        .log-row:last-child {
+            border-bottom: none;
+        }
+
+        .log-row.is-violation {
+            border-left: 4px solid #ef4444;
+            background: rgba(239, 68, 68, 0.04);
+        }
+
+        .log-row.is-inspection {
+            border-left: 4px solid #f59e0b;
+            background: rgba(245, 158, 11, 0.04);
+        }
+
+    .type-badge {
+        font-size: 0.6rem;
+        font-weight: 800;
+        padding: 2px 8px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .badge-violation {
+        background: #ef4444;
+        color: white;
+    }
+
+    .badge-inspection {
+        background: #f59e0b !important;
+        color: black !important;
+    }
+
+    .author-info {
+        font-size: 0.75rem;
+        color: #888;
+        margin-bottom: 5px;
+        display: block;
+        font-weight: 600;
+    }
+
+    .msg-content {
+        color: #e0e0e0;
+        font-size: 1rem;
+        word-break: break-all;
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+    }
+
+    .btn-xs {
+        padding: 3px 10px;
+        font-size: 0.65rem;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+
+    .clickable-word {
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+        .clickable-word:hover {
+            color: #fff;
+            text-decoration: underline;
+        }
+
+    .topic-success {
+        color: #10b981 !important;
+    }
+
+    .topic-danger {
+        color: #ef4444 !important;
+    }
 </style>
 
 <div class="container-fluid py-4" style="max-width: 1200px;">
@@ -45,10 +147,16 @@
     @foreach (var userGroup in userGroups)
     {
         var firstLog = userGroup.First();
+        bool isTargetAdmin = await UserManager.IsInRoleAsync(firstLog.User, "Admin");
+
         <div class="user-wrapper">
             <div class="user-identity">
                 <h4 class="text-white mb-0">
                     <i class="bi bi-person-badge me-2 text-primary"></i>@firstLog.User.UserName
+                    @if (isTargetAdmin)
+                    {
+                        <span class="badge bg-info ms-2" style="font-size: 0.6rem; vertical-align: middle;">ADMIN</span>
+                    }
                 </h4>
                 <div class="action-panel d-flex gap-2">
                     <form asp-area="Admin" asp-controller="Forum" asp-action="ApproveAllUserLogs" method="post">
@@ -61,7 +169,10 @@
                         <input type="hidden" name="userId" value="@userGroup.Key" />
                         <button type="submit" class="btn btn-danger btn-sm fw-bold btn-xs">TÜMÜNÜ SİL</button>
                     </form>
-                    <button type="button" class="btn btn-warning btn-xs" onclick="openBanModal(@userGroup.Key, '@firstLog.User.UserName')">BANLA</button>
+                    @if (!isTargetAdmin)
+                    {
+                        <button type="button" class="btn btn-warning btn-xs" onclick="openBanModal(@userGroup.Key, '@firstLog.User.UserName')">BANLA</button>
+                    }
                 </div>
             </div>
 
