@@ -16,9 +16,11 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        // Database Connection
         builder.Services.AddDbContext<SilverSetContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+        // Rate Limiter Setup
         builder.Services.AddRateLimiter(options =>
         {
             options.AddFixedWindowLimiter("Strict", opt =>
@@ -29,6 +31,7 @@ public class Program
             });
         });
 
+        // Identity Setup
         builder.Services.AddIdentity<AppUser, AppRole>(options =>
         {
             options.Password.RequiredLength = 8;
@@ -47,6 +50,7 @@ public class Program
         builder.Services.AddHttpClient<TurnstileService>();
         builder.Services.AddMemoryCache();
 
+        // Custom Services
         builder.Services.AddScoped<ProfanityFilterService>();
         builder.Services.AddScoped<BannedUserFilter>();
         builder.Services.AddScoped<AdminNotificationFilter>();
@@ -91,6 +95,7 @@ public class Program
 
         app.UseStatusCodePagesWithReExecute("/Errors/{0}");
 
+        // Security Headers
         app.Use(async (context, next) =>
         {
             var path = context.Request.Path.Value?.ToLower() ?? "";
@@ -123,18 +128,27 @@ public class Program
 
         app.MapHub<TicketHub>("/ticketHub").RequireRateLimiting("Strict");
 
+        // --- SEEDING & MIGRATION BLOCK ---
         using (var scope = app.Services.CreateScope())
         {
             var services = scope.ServiceProvider;
+            var logger = services.GetRequiredService<ILogger<Program>>();
+
             try
             {
                 var context = services.GetRequiredService<SilverSetContext>();
+
+                logger.LogInformation("Veritabaný kontrol ediliyor/migrate ediliyor...");
+                await context.Database.MigrateAsync();
+
                 var userManager = services.GetRequiredService<UserManager<AppUser>>();
                 var roleManager = services.GetRequiredService<RoleManager<AppRole>>();
                 var configuration = services.GetRequiredService<IConfiguration>();
 
+                // Global Settings Seeding
                 if (!await context.GlobalSettings.AnyAsync())
                 {
+                    logger.LogInformation("Global ayarlar oluþturuluyor...");
                     context.GlobalSettings.AddRange(
                         new GlobalSetting { Key = "ForumStatus", Value = "true", Description = "Forumun genel eriþim durumu" },
                         new GlobalSetting { Key = "ForumPostDelay", Value = "24h", Description = "Yeni üyeler için bekleme süresi" },
@@ -143,13 +157,19 @@ public class Program
                     await context.SaveChangesAsync();
                 }
 
+                // Admin Account Seeding
                 string? adminRole = configuration["AdminSetup:AdminRole"];
                 string? adminName = configuration["AdminSetup:AdminName"];
                 string? adminPassword = configuration["AdminSetup:Password"];
                 string? adminEmail = configuration["AdminSetup:AdminEmail"];
 
+                // Debug: Konfigürasyonun gelip gelmediðini logla
+                logger.LogInformation("Admin Seeding Kontrolü: Name={Name}, Role={Role}, Email={Email}",
+                    adminName ?? "NULL", adminRole ?? "NULL", adminEmail ?? "NULL");
+
                 if (!string.IsNullOrEmpty(adminRole) && !await roleManager.RoleExistsAsync(adminRole))
                 {
+                    logger.LogInformation("Admin rolü oluþturuluyor: {Role}", adminRole);
                     await roleManager.CreateAsync(new AppRole { Name = adminRole });
                 }
 
@@ -158,6 +178,7 @@ public class Program
                     var user = await userManager.FindByNameAsync(adminName);
                     if (user == null)
                     {
+                        logger.LogInformation("Admin kullanýcýsý oluþturuluyor: {AdminName}", adminName);
                         var adminUser = new AppUser
                         {
                             UserName = adminName,
@@ -165,15 +186,38 @@ public class Program
                             EmailConfirmed = true,
                             CreatedAt = DateTime.UtcNow
                         };
+
                         var result = await userManager.CreateAsync(adminUser, adminPassword);
-                        if (result.Succeeded && !string.IsNullOrEmpty(adminRole))
+                        if (result.Succeeded)
                         {
-                            await userManager.AddToRoleAsync(adminUser, adminRole);
+                            if (!string.IsNullOrEmpty(adminRole))
+                            {
+                                await userManager.AddToRoleAsync(adminUser, adminRole);
+                                logger.LogInformation("Admin kullanýcýsýna {Role} rolü atandý.", adminRole);
+                            }
+                        }
+                        else
+                        {
+                            foreach (var error in result.Errors)
+                            {
+                                logger.LogError("Admin oluþturma hatasý: {Error}", error.Description);
+                            }
                         }
                     }
+                    else
+                    {
+                        logger.LogInformation("Admin kullanýcýsý zaten mevcut.");
+                    }
+                }
+                else
+                {
+                    logger.LogWarning("AdminSetup verileri eksik! Environment deðiþkenlerini kontrol edin.");
                 }
             }
-            catch (Exception) { }
+            catch (Exception ex)
+            {
+                logger.LogCritical(ex, "Seeding veya Migration iþlemi sýrasýnda KRÝTÝK HATA oluþtu!");
+            }
         }
 
         await app.RunAsync();
