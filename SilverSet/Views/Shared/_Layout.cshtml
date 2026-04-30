@@ -208,33 +208,30 @@
         }
 
         @@media (max-width: 991px) {
-            .ss-navbar .navbar-collapse
+            .ss-navbar .navbar-collapse {
+                background-color: rgba(10, 10, 10, 0.98);
+                border-top: 1px solid var(--color-border);
+                margin-top: 0.5rem;
+                padding: 1rem;
+                border-radius: 0 0 12px 12px;
+            }
 
-        {
-            background-color: rgba(10, 10, 10, 0.98);
-            border-top: 1px solid var(--color-border);
-            margin-top: 0.5rem;
-            padding: 1rem;
-            border-radius: 0 0 12px 12px;
-        }
+            .ss-navbar .nav-link {
+                padding: 0.6rem 0.5rem !important;
+                border-bottom: 1px solid var(--color-border);
+            }
 
-        .ss-navbar .nav-link {
-            padding: 0.6rem 0.5rem !important;
-            border-bottom: 1px solid var(--color-border);
-        }
+            .ss-nav-actions {
+                margin-top: 0.75rem;
+                display: flex;
+                gap: 0.5rem;
+            }
 
-        .ss-nav-actions {
-            margin-top: 0.75rem;
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .ss-nav-actions {
-            border-top: 1px solid var(--color-border);
-            padding-top: 0.75rem;
-            margin-top: 0.25rem;
-        }
-
+            .ss-nav-actions {
+                border-top: 1px solid var(--color-border);
+                padding-top: 0.75rem;
+                margin-top: 0.25rem;
+            }
         }
 
         .ss-content {
@@ -354,12 +351,12 @@
                     </ul>
 
                     <div class="ss-nav-actions d-flex align-items-center gap-2">
-                        @if (User.Identity != null && User.Identity.IsAuthenticated)
+                        @if (User?.Identity?.IsAuthenticated == true)
                         {
                             <div class="dropdown">
                                 <button class="ss-user-btn dropdown-toggle" type="button"
                                         data-bs-toggle="dropdown" aria-expanded="false">
-                                    @User.Identity.Name
+                                    @(User?.Identity?.Name ?? "User")
                                 </button>
                                 <ul class="dropdown-menu ss-dropdown-menu dropdown-menu-end">
 
@@ -404,8 +401,9 @@
                         }
                         else
                         {
-                            <a asp-controller="Account" asp-action="Login" class="btn-nav-login">Login</a>
-                            <a asp-controller="Account" asp-action="Register" class="btn-nav-register">Register</a>
+                            <!-- HATA BURADAN KAYNAKLANIYORDU, DOĞRUDAN HTML HREF KULLANILARAK TAGHELPER BYPASS EDİLDİ -->
+                            <a href="/Account/Login" class="btn-nav-login">Login</a>
+                            <a href="/Account/Register" class="btn-nav-register">Register</a>
                         }
                     </div>
 

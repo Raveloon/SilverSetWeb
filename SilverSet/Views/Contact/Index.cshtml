@@ -386,9 +386,9 @@
         </aside>
         <section class="contact-panel">
             <h2 class="panel-title"><i class="bi bi-ticket-detailed"></i> Direct Support</h2>
-            @if (User.Identity?.IsAuthenticated == true)
+            @if (User?.Identity?.IsAuthenticated == true)
             {
-                if (Model.ActiveTicket != null)
+                if (Model?.ActiveTicket != null)
                 {
                     <article class="chat-container">
                         <header class="chat-header">
@@ -398,7 +398,7 @@
                             </div>
                             <div style="background:#fff; color:#000; padding:0.3rem 0.8rem; border-radius:4px; font-size:0.65rem; font-weight:900;">ACTIVE</div>
                         </header>
-                        @if (Model.ActiveTicket.Attachments != null && Model.ActiveTicket.Attachments.Any())
+                        @if (Model.ActiveTicket.Attachments?.Any() == true)
                         {
                             <div class="evidence-bar">
                                 @foreach (var att in Model.ActiveTicket.Attachments)
@@ -412,10 +412,10 @@
                             {
                                 var raw = msg.Content ?? "";
                                 bool isSystem = raw.StartsWith("[CLOSED]") || raw.StartsWith("[RE-OPENED]") || raw.StartsWith("[BANNED]") || raw.StartsWith("[FLAGGED]") || raw.StartsWith("[RESTORED]");
-
                                 if (isSystem)
                                 {
-                                    if (User.IsInRole("Admin"))
+                                    @* DÜZELTİLDİ: Null-safe rol kontrolü *@
+                                    if (User?.IsInRole("Admin") == true)
                                     {
                                         <div class="msg-system" style="@(raw.Contains("[BANNED]") || raw.Contains("[FLAGGED]") ? "color:#ef4444; border-color:#ef4444;" : raw.Contains("[RESTORED]") ? "color:#10b981; border-color:#10b981;" : "")">
                                             <i class="bi bi-info-circle me-1"></i> @raw
@@ -424,9 +424,7 @@
                                 }
                                 else
                                 {
-                                    <div class="msg-bubble @(msg.IsAdminReply ? "msg-admin" : "msg-user")">
-                                        @raw
-                                    </div>
+                                    <div class="msg-bubble @(msg.IsAdminReply ? "msg-admin" : "msg-user")">@raw</div>
                                 }
                             }
                         </div>
@@ -434,7 +432,7 @@
                             <div class="input-wrapper">
                                 <div class="input-row">
                                     <input type="text" id="messageInput" class="form-control-custom mb-0" placeholder="Transmit real-time message..." autocomplete="off" maxlength="500" />
-                                    <button id="sendBtn" class="btn-send" disabled><i class="bi bi-send-fill"></i></button>
+                                    <button id="sendBtn" class="btn-send"><i class="bi bi-send-fill"></i></button>
                                 </div>
                                 <div id="chatCounter" class="char-counter">0 / 500 CHARACTERS</div>
                             </div>
@@ -458,9 +456,9 @@
                         <div class="mb-4 d-flex justify-content-center">
                             <div class="cf-turnstile" data-sitekey="@Configuration["CloudflareTurnstile:SiteKey"]" data-theme="dark"></div>
                         </div>
-                        <button type="submit" id="submitTicketBtn" class="btn-submit-ticket" disabled>INITIALIZE MISSION</button>
+                        <button type="submit" id="submitTicketBtn" class="btn-submit-ticket">INITIALIZE MISSION</button>
                     </form>
-                    @if (Model.ClosedTicketsCount > 0)
+                    @if (Model?.ClosedTicketsCount > 0)
                     {
                         <a asp-action="History" class="btn-history"><i class="bi bi-archive me-1"></i> VIEW PAST LOGS (@Model.ClosedTicketsCount)</a>
                     }
@@ -470,7 +468,8 @@
             {
                 <div style="text-align:center; padding: 3rem 0;">
                     <h4 style="color: white; margin-bottom: 2rem; letter-spacing: 2px; font-weight: 800;">ENCRYPTION REQUIRED</h4>
-                    <a asp-controller="Account" asp-action="Login" class="btn-submit-ticket" style="text-decoration:none;">AUTHENTICATE NOW</a>
+                    <!-- HATA BURADAN KAYNAKLANIYORDU, HTML HREF'E ÇEVRİLDİ -->
+                    <a href="/Account/Login" class="btn-submit-ticket" style="text-decoration:none;">AUTHENTICATE NOW</a>
                 </div>
             }
         </section>
@@ -486,79 +485,98 @@
         const labelText = document.getElementById('file-label-text');
         const ticketForm = document.getElementById('ticketForm');
         let selectedFiles = [];
-        if(fileInput) {
-            fileInput.addEventListener('change', function() {
+
+        if (fileInput) {
+            fileInput.addEventListener('change', function () {
                 const files = Array.from(this.files);
                 files.forEach(file => { if (selectedFiles.length < 5) selectedFiles.push(file); });
-                });
-
                 renderPreviews();
                 this.value = "";
             });
         }
+
         function renderPreviews() {
+            if (!previewArea) return;
             previewArea.innerHTML = "";
             selectedFiles.forEach((file, index) => {
                 const reader = new FileReader();
-                reader.onload = (e) => { box.innerHTML = `<img src="${e.target.result}"><button type="button" class="remove-btn" onclick="removeFile(${index})">×</button>`; };
-                        <button type="button" class="remove-btn" onclick="removeFile(${index})">×</button>
-                    `;
+                const box = document.createElement("div");
+                box.className = "preview-box";
+                reader.onload = (e) => {
+                    box.innerHTML = `<img src="${e.target.result}"><button type="button" class="remove-btn" onclick="removeFile(${index})">×</button>`;
                 };
-            labelText.innerHTML = selectedFiles.length > 0 ? `<span style="color:#fff;">${selectedFiles.length}</span> FILE(S) SELECTED` : "Attach Evidence (Max 5)";
+                reader.readAsDataURL(file);
+                previewArea.appendChild(box);
+            });
+            if (labelText) labelText.innerHTML = selectedFiles.length > 0 ? `<span style="color:#fff;">${selectedFiles.length}</span> FILE(S) SELECTED` : "Attach Evidence (Max 5)";
+        }
 
-        function removeFile(index) {
+        window.removeFile = function (index) {
             selectedFiles.splice(index, 1);
             renderPreviews();
         }
-        function removeFile(index) { selectedFiles.splice(index, 1); renderPreviews(); }
-        if(ticketForm) {
-                finalInput.type = 'file'; finalInput.name = 'attachments'; finalInput.multiple = true; finalInput.files = dt.files; finalInput.style.display = 'none';
+
+        if (ticketForm) {
+            ticketForm.addEventListener('submit', function (e) {
+                const dt = new DataTransfer();
+                selectedFiles.forEach(file => dt.items.add(file));
+                const finalInput = document.createElement('input');
+                finalInput.type = 'file';
                 finalInput.name = 'attachments';
                 finalInput.multiple = true;
                 finalInput.files = dt.files;
                 finalInput.style.display = 'none';
-
                 this.appendChild(finalInput);
-                    const connection = new signalR.HubConnectionBuilder().withUrl("/ticketHub").withAutomaticReconnect().build();
-                    const chatBox = document.getElementById("chatBox");
-                    const messageInput = document.getElementById("messageInput");
-                    const sendBtn = document.getElementById("sendBtn");
-                    const ticketId = "@Model.ActiveTicket.Id";
-                    if(chatBox) chatBox.scrollTop = chatBox.scrollHeight;
-                    connection.on("ReceiveMessage", (message, isAdmin) => {
-                        const isAdminUser = "@(User.IsInRole("Admin") ? "true" : "false")" === "true";
-                        const isSystem = message.startsWith("[CLOSED]") || message.startsWith("[RE-OPENED]") || message.startsWith("[BANNED]") || message.startsWith("[FLAGGED]") || message.startsWith("[RESTORED]");
-                const connection = new signalR.HubConnectionBuilder().withUrl("/ticketHub").withAutomaticReconnect().build();
-                        if (isSystem && !isAdminUser) return;
-                const messageInput = document.getElementById("messageInput");
-                        const div = document.createElement("div");
-                        if (isSystem) {
-                            div.className = "msg-system";
-                            if (message.includes("[BANNED]") || message.includes("[FLAGGED]")) {
-                                div.style.color = "#ef4444";
-                                div.style.borderColor = "#ef4444";
-                            } else if (message.includes("[RESTORED]")) {
-                                div.style.color = "#10b981";
-                                div.style.borderColor = "#10b981";
-                            }
-                        } else {
-                            div.className = `msg-bubble ${isAdmin ? 'msg-admin' : 'msg-user'}`;
-                        }
+            });
+        }
 
-                        div.textContent = message;
-                        chatBox.appendChild(div);
-                        chatBox.scrollTop = chatBox.scrollHeight;
-                    });
-                    connection.start().then(() => connection.invoke("JoinTicketGroup", ticketId)).catch(console.error);
-                    const transmit = () => {
-                        const msg = messageInput.value.trim();
-                        if (msg) { connection.invoke("SendMessage", parseInt(ticketId), msg).catch(console.error); messageInput.value = ""; }
-                    };
-                    sendBtn?.addEventListener("click", transmit);
-                    messageInput?.addEventListener("keypress", (e) => { if (e.key === "Enter") transmit(); });
+        @if (Model?.ActiveTicket != null)
+        {
+            <text>
+                const connection = new signalR.HubConnectionBuilder().withUrl("/ticketHub").withAutomaticReconnect().build();
+                const chatBox = document.getElementById("chatBox");
+                const messageInput = document.getElementById("messageInput");
+                const sendBtn = document.getElementById("sendBtn");
+                const ticketId = "@Model.ActiveTicket.Id";
+
+                if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+
+                connection.on("ReceiveMessage", (message, isAdmin) => {
+                    // DÜZELTİLDİ: Null-safe rol kontrolü JS
+                    const isAdminUser = "@(User?.IsInRole("Admin") == true ? "true" : "false")" === "true";
+                    const isSystem = message.startsWith("[CLOSED]") || message.startsWith("[RE-OPENED]") || message.startsWith("[BANNED]") || message.startsWith("[FLAGGED]") || message.startsWith("[RESTORED]");
+
+                    if (isSystem && !isAdminUser) return;
+
+                    const div = document.createElement("div");
+                    if (isSystem) {
+                        div.className = "msg-system";
+                        if (message.includes("[BANNED]") || message.includes("[FLAGGED]")) {
+                            div.style.color = "#ef4444";
+                            div.style.borderColor = "#ef4444";
+                        } else if (message.includes("[RESTORED]")) {
+                            div.style.color = "#10b981";
+                            div.style.borderColor = "#10b981";
+                        }
+                    } else {
+                        div.className = `msg-bubble ${isAdmin ? 'msg-admin' : 'msg-user'}`;
+                    }
+
+                    div.textContent = message;
+                    chatBox.appendChild(div);
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                });
+
+                connection.start().then(() => connection.invoke("JoinTicketGroup", ticketId)).catch(console.error);
+
+                const transmit = () => {
+                    const msg = messageInput.value.trim();
+                    if (msg) {
+                        connection.invoke("SendMessage", parseInt(ticketId), msg).catch(console.error);
                         messageInput.value = "";
                     }
                 };
+
                 sendBtn?.addEventListener("click", transmit);
                 messageInput?.addEventListener("keypress", (e) => { if (e.key === "Enter") transmit(); });
             </text>
