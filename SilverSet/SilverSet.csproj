@@ -25,7 +25,14 @@
 
   <ItemGroup>
     <Folder Include="Areas\Admin\Models\Entities\" />
+    <Folder Include="Migrations\" />
     <Folder Include="wwwroot\Data\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="wwwroot\Data\blacklist.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

@@ -191,10 +191,6 @@
         font-weight: bold;
     }
 
-        .remove-btn:hover {
-            background: #ef4444;
-        }
-
     .btn-submit-ticket {
         background: #fff;
         color: #000;
@@ -238,10 +234,6 @@
         text-transform: uppercase;
         letter-spacing: 1.5px;
     }
-
-        .btn-history:hover {
-            color: #fff;
-        }
 
     .chat-container {
         display: flex;
@@ -312,6 +304,21 @@
         color: #fff;
     }
 
+    .msg-system {
+        align-self: center;
+        color: #888;
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        padding: 0.5rem 1rem;
+        border-top: 1px dashed #333;
+        border-bottom: 1px dashed #333;
+        margin: 0.5rem 0;
+        text-align: center;
+        width: 80%;
+    }
+
     .chat-input-area {
         padding: 1rem 1.5rem;
         border-top: 1px solid #333;
@@ -371,7 +378,6 @@
         <h1 class="contact-title">CONTACT US</h1>
         <p class="contact-subtitle">Establish a direct link with the SilverSet operations team.</p>
     </header>
-
     <div class="contact-grid">
         <aside class="contact-panel">
             <h2 class="panel-title"><i class="bi bi-hdd-network"></i> contact informations</h2>
@@ -390,10 +396,8 @@
                 </li>
             </ul>
         </aside>
-
         <section class="contact-panel">
             <h2 class="panel-title"><i class="bi bi-ticket-detailed"></i> Direct Support</h2>
-
             @if (User.Identity?.IsAuthenticated == true)
             {
                 if (Model.ActiveTicket != null)
@@ -406,7 +410,6 @@
                             </div>
                             <div style="background:#fff; color:#000; padding:0.3rem 0.8rem; border-radius:4px; font-size:0.65rem; font-weight:900;">ACTIVE</div>
                         </header>
-
                         @if (Model.ActiveTicket.Attachments != null && Model.ActiveTicket.Attachments.Any())
                         {
                             <div class="evidence-bar">
@@ -416,14 +419,29 @@
                                 }
                             </div>
                         }
-
                         <div class="chat-messages" id="chatBox">
                             @foreach (var msg in Model.ActiveTicket.Messages.OrderBy(m => m.SentAt))
                             {
-                                <div class="msg-bubble @(msg.IsAdminReply ? "msg-admin" : "msg-user")">@msg.Content</div>
+                                var raw = msg.Content ?? "";
+                                bool isSystem = raw.StartsWith("[CLOSED]") || raw.StartsWith("[RE-OPENED]") || raw.StartsWith("[BANNED]") || raw.StartsWith("[FLAGGED]") || raw.StartsWith("[RESTORED]");
+
+                                if (isSystem)
+                                {
+                                    if (User.IsInRole("Admin"))
+                                    {
+                                        <div class="msg-system" style="@(raw.Contains("[BANNED]") || raw.Contains("[FLAGGED]") ? "color:#ef4444; border-color:#ef4444;" : raw.Contains("[RESTORED]") ? "color:#10b981; border-color:#10b981;" : "")">
+                                            <i class="bi bi-info-circle me-1"></i> @raw
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="msg-bubble @(msg.IsAdminReply ? "msg-admin" : "msg-user")">
+                                        @raw
+                                    </div>
+                                }
                             }
                         </div>
-
                         <footer class="chat-input-area">
                             <div class="input-wrapper">
                                 <div class="input-row">
@@ -450,15 +468,12 @@
                                 <span id="file-label-text">Attach Evidence (Max 5)</span>
                             </label>
                         </div>
-
                         <div id="preview-area" class="preview-container"></div>
-
                         <div class="mb-4 d-flex justify-content-center">
                             <div class="cf-turnstile" data-sitekey="@Configuration["CloudflareTurnstile:SiteKey"]" data-theme="dark"></div>
                         </div>
                         <button type="submit" id="submitTicketBtn" class="btn-submit-ticket" disabled>INITIALIZE MISSION</button>
                     </form>
-
                     @if (Model.ClosedTicketsCount > 0)
                     {
                         <a asp-action="History" class="btn-history"><i class="bi bi-archive me-1"></i> VIEW PAST LOGS (@Model.ClosedTicketsCount)</a>
@@ -479,13 +494,11 @@
 @section Scripts {
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
-
     <script>
         const fileInput = document.getElementById('attachments');
         const previewArea = document.getElementById('preview-area');
         const labelText = document.getElementById('file-label-text');
         const ticketForm = document.getElementById('ticketForm');
-
         let selectedFiles = [];
 
         function setupCounter(inputId, counterId, buttonId) {
@@ -526,7 +539,6 @@
                 this.value = "";
             });
         }
-
         function renderPreviews() {
             previewArea.innerHTML = "";
             selectedFiles.forEach((file, index) => {
@@ -553,7 +565,7 @@
             selectedFiles.splice(index, 1);
             renderPreviews();
         }
-
+        function removeFile(index) { selectedFiles.splice(index, 1); renderPreviews(); }
         if(ticketForm) {
             ticketForm.addEventListener('submit', function(e) {
                 const dt = new DataTransfer();
@@ -567,7 +579,6 @@
                 this.appendChild(finalInput);
             });
         }
-
         @if (Model.ActiveTicket != null)
         {
             <text>

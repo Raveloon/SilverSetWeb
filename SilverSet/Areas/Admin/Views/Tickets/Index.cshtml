@@ -235,26 +235,16 @@
                                             @{
                                                 var rawReason = item.SpamReason ?? "";
                                                 string prefix = "MANUAL";
-                                                string cleanReason = rawReason;
+                                                if (rawReason.Contains("Auto-Flag") || rawReason.Contains("Takıldı")) prefix = "FILTERED";
 
-                                                if (rawReason.Contains("Auto-Flag") || rawReason.Contains("Takıldı"))
-                                                {
-                                                    prefix = "FILTERED";
-                                                    cleanReason = rawReason.Replace("Auto-Flag:", "")
-                                                    .Replace("Filtreye Takıldı:", "")
-                                                    .Replace("İçerik:", "")
-                                                    .Trim()
-                                                    .TrimStart(':')
-                                                    .Trim();
-                                                }
-                                                else if (rawReason.Contains("Manual Flag:"))
-                                                {
-                                                    prefix = "MANUAL";
-                                                    cleanReason = rawReason.Replace("Manual Flag:", "").Trim();
-                                                }
+                                                string cleanReason = rawReason
+                                                .Replace("Auto-Flag:", "").Replace("Manual Flag:", "").Replace("Filtreye Takıldı:", "")
+                                                .Replace("İçerik:", "").Replace("MANUAL :", "").Replace("FILTERED :", "")
+                                                .Trim().TrimStart(':').Trim();
 
-                                                @(prefix + " : " + cleanReason.ToUpper())
+                                                if (string.IsNullOrEmpty(cleanReason)) cleanReason = "S";
                                             }
+                                            @(prefix + " : " + cleanReason.ToUpper())
                                         </span>
                                     }
                                 </td>

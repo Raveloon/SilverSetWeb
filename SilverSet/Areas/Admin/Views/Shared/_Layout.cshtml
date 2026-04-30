@@ -1,4 +1,7 @@
-﻿<!DOCTYPE html>
+﻿@using SilverSet.Areas.Admin.Models
+@{
+}
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -143,21 +146,36 @@
                 text-align: center;
             }
 
+        .badge-group {
+            display: flex;
+            gap: 5px;
+            margin-left: auto;
+            align-items: center;
+        }
+
         .notification-badge {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            background-color: #ef4444;
             color: white;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: 800;
             padding: 0 6px;
             border-radius: 10px;
-            margin-left: auto;
             min-width: 20px;
             height: 20px;
             line-height: 1;
+            margin-left: auto;
+        }
+
+        .badge-red {
+            background-color: #ef4444;
             box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+        }
+
+        .badge-orange {
+            background-color: #f59e0b;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
         }
 
         .sidebar-footer {
@@ -340,19 +358,19 @@
 
             <div class="nav-section-label">SUPPORT</div>
             <a asp-area="Admin" asp-controller="Tickets" asp-action="Index" asp-route-view="active"
-               class="sidebar-link @(ViewBag.ActiveMenu == "Tickets" ? "active" : "")">
+               class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tickets" && Context.Request.Query["view"] == "active" ? "active" : "")">
                 <i class="bi bi-ticket-detailed"></i> Support Tickets
                 @if (ViewBag.ActiveTicketCount > 0)
                 {
-                    <span class="notification-badge">@ViewBag.ActiveTicketCount</span>
+                    <span class="notification-badge badge-red">@ViewBag.ActiveTicketCount</span>
                 }
             </a>
             <a asp-area="Admin" asp-controller="Tickets" asp-action="Index" asp-route-view="spam"
-               class="sidebar-link @(ViewBag.ActiveMenu == "Spam" ? "active" : "")">
+               class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tickets" && Context.Request.Query["view"] == "spam" ? "active" : "")">
                 <i class="bi bi-shield-x"></i> Spam
                 @if (ViewBag.SpamTicketCount > 0)
                 {
-                    <span class="notification-badge">@ViewBag.SpamTicketCount</span>
+                    <span class="notification-badge badge-red">@ViewBag.SpamTicketCount</span>
                 }
             </a>
 
@@ -367,9 +385,29 @@
             </a>
 
             <div class="nav-section-label">Community</div>
-            <a href="#" class="sidebar-link">
-                <i class="bi bi-chat-square-text"></i> Forum
-                <span style="margin-left:auto; font-size:0.6rem; background:rgba(255,255,255,0.1); padding:0.1rem 0.4rem; border-radius:4px; color:#666">Soon</span>
+            <a asp-area="Admin" asp-controller="Forum" asp-action="Settings"
+               class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Forum" && ViewContext.RouteData.Values["action"]?.ToString() == "Settings" ? "active" : "")">
+                <i class="bi bi-gear-wide-connected"></i> Forum Control
+            </a>
+            <a asp-area="Admin" asp-controller="Forum" asp-action="Categories"
+               class="sidebar-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Categories" ? "active" : "")">
+                <i class="bi bi-tags"></i> Categories
+            </a>
+            <a asp-area="Admin" asp-controller="Forum" asp-action="PendingApprovals"
+               class="sidebar-link @(ViewContext.RouteData.Values["action"]?.ToString() == "PendingApprovals" ? "active" : "")">
+                <i class="bi bi-shield-exclamation"></i> Approvals
+                @if (ViewBag.ForumApprovalCount > 0)
+                {
+                    <span class="notification-badge badge-orange">@ViewBag.ForumApprovalCount</span>
+                }
+            </a>
+            <a asp-area="Admin" asp-controller="Forum" asp-action="SpamLogs"
+               class="sidebar-link @(ViewContext.RouteData.Values["action"]?.ToString() == "SpamLogs" ? "active" : "")">
+                <i class="bi bi-shield-slash"></i> Forum Spam Logs
+                @if (ViewBag.ForumSpamCount > 0)
+                {
+                    <span class="notification-badge badge-red">@ViewBag.ForumSpamCount</span>
+                }
             </a>
         </nav>
 
@@ -392,12 +430,12 @@
                         </svg>
                     </button>
                     <span class="topbar-title" style="letter-spacing: 1px; color: #777; text-transform: uppercase; font-size: 0.7rem;">
-                        DashBoard Terminal
+                        Management Console
                     </span>
                 </div>
 
                 <div class="topbar-user" style="gap: 1.5rem;">
-                    <span id="live-top-clock" class="d-none d-sm-inline" style="color: white; font-weight: 700; font-size: 1.1rem; letter-spacing: 0.5px; font-family: 'Courier New', Courier, monospace;">
+                    <span id="live-top-clock" class="topbar-clock d-none d-sm-inline" style="color: white; font-weight: 700; font-size: 1.1rem; letter-spacing: 0.5px; font-family: 'Courier New', Courier, monospace;">
                         @DateTime.Now.ToString("HH:mm")
                     </span>
                     <div style="display: flex; align-items: center; gap: 0.6rem;">

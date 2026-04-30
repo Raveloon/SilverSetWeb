@@ -83,7 +83,7 @@ public class TicketHub : Hub
         if (spamCheck.IsSpam)
         {
             ticket.IsSpam = true;
-            ticket.SpamReason = $"Auto-Flag: {spamCheck.Reason}";
+            ticket.SpamReason = $"Auto-Flag: {spamCheck.CaughtWord}";
             cleanMessage = await _filterService.FilterText(cleanMessage);
         }
 

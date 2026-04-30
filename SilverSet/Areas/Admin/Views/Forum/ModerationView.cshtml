@@ -1,0 +1,290 @@
+﻿@model SilverSet.Models.Entities.Forum.ForumTopic
+@using SilverSet.Models.Entities.Forum
+@using System.Text.RegularExpressions
+@{
+    ViewData["Title"] = "İçerik İnceleme";
+    Layout = "_Layout";
+
+    var allLogs = (List<ForumSpamLog>)ViewBag.TopicLogs ?? new List<ForumSpamLog>();
+
+    var caughtWords = allLogs.Select(l => l.CaughtWord)
+                             .Where(w => !string.IsNullOrEmpty(w) && w != "DENETIM")
+                             .Distinct().ToList();
+
+    bool hasTitleViolation = allLogs.Any(l => l.Type == "TopicTitle" && !l.IsHandled);
+
+    string HighlightWords(string input)
+    {
+        if (string.IsNullOrEmpty(input) || !caughtWords.Any()) return input;
+        foreach (var word in caughtWords)
+        {
+            var pattern = Regex.Escape(word);
+            input = Regex.Replace(input, pattern, $"<span style='color:#ef4444; border-bottom: 2px solid #ef4444; font-weight:bold;'>$0</span>", RegexOptions.IgnoreCase);
+        }
+        return input;
+    }
+}
+
+<style>
+    body {
+        background-color: #050505;
+        color: #eee;
+    }
+
+    .mod-container {
+        max-width: 1100px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .forum-card {
+        background: #111;
+        border: 1px solid #222;
+        display: flex;
+        margin-bottom: 2rem;
+        min-height: 200px;
+        border-radius: 4px;
+    }
+
+    .user-side {
+        width: 180px;
+        background: #0d0d0d;
+        border-right: 1px solid #222;
+        padding: 1.5rem 1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .user-avatar {
+        width: 70px;
+        height: 70px;
+        background: #1a1a1a;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #fff;
+        margin-bottom: 0.8rem;
+        border: 1px solid #333;
+    }
+
+    .user-name {
+        font-weight: 700;
+        font-size: 1rem;
+        color: #fff;
+        margin-bottom: 0.2rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+    }
+
+    .user-role {
+        font-size: 0.65rem;
+        font-weight: 800;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 1rem;
+    }
+
+    .content-side {
+        flex: 1;
+        padding: 1.5rem 2rem;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+
+    .content-meta {
+        font-size: 0.75rem;
+        color: #444;
+        margin-bottom: 1.2rem;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .desc-box-red {
+        background: rgba(239, 68, 68, 0.08);
+        border-left: 4px solid #ef4444;
+    }
+
+    .desc-box-yellow {
+        background: rgba(245, 158, 11, 0.08);
+        border-left: 4px solid #f59e0b;
+    }
+
+    .post-text {
+        color: #e0e0e0;
+        line-height: 1.6;
+        font-size: 1.05rem;
+        flex-grow: 1;
+        word-break: break-all;
+    }
+
+    .btn-ban-mini {
+        background: #f59e0b;
+        color: #000;
+        font-size: 0.6rem;
+        font-weight: 900;
+        padding: 4px 8px;
+        border-radius: 3px;
+        border: none;
+        text-transform: uppercase;
+        transition: 0.2s;
+    }
+
+        .btn-ban-mini:hover {
+            background: #ef4444;
+            color: #fff;
+        }
+
+    .back-link {
+        color: #666;
+        text-decoration: none;
+        font-size: 0.85rem;
+        transition: 0.2s;
+    }
+
+        .back-link:hover {
+            color: #fff;
+        }
+</style>
+
+<div class="mod-container">
+    <div class="mb-4">
+        <a asp-action="SpamLogs" class="back-link"><i class="bi bi-arrow-left me-2"></i>Moderasyon Merkezine Dön</a>
+    </div>
+
+    <h2 class="fw-bold mb-4 text-white">
+        Topic: @Html.Raw(HighlightWords(Model.Title))
+    </h2>
+
+    @{
+        var topicLog = allLogs.FirstOrDefault(l => (l.Type == "Topic" || l.Type == "TopicTitle") && !l.IsHandled);
+        string topicBoxClass = (topicLog != null && topicLog.CaughtWord != "DENETIM") ? "desc-box-red" :
+        ((topicLog != null || !Model.IsApproved) ? "desc-box-yellow" : "");
+    }
+
+    <div class="forum-card">
+        <div class="user-side">
+            <div class="user-avatar">@Model.User.UserName.Substring(0, 1).ToUpper()</div>
+            <div class="user-name">@Model.User.UserName</div>
+            <div class="user-role">TOPIC STARTER</div>
+            <button type="button" class="btn-ban-mini" onclick="openBanModal(@Model.UserId, '@Model.User.UserName')">
+                BANLA
+            </button>
+        </div>
+
+        <div class="content-side @topicBoxClass">
+            <div class="content-meta">
+                <span>@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+            </div>
+
+            <div class="post-text">
+                @Html.Raw(HighlightWords(Model.Content))
+            </div>
+
+            <div class="mt-4 pt-2 border-top border-secondary d-flex justify-content-end gap-3">
+                @if (!Model.IsApproved || topicLog != null)
+                {
+                    <form asp-action="ApproveItem" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <input type="hidden" name="type" value="Topic" />
+                        <button type="submit" class="btn btn-link text-success text-decoration-none fw-bold p-0" style="font-size:0.75rem">ONAYLA</button>
+                    </form>
+                }
+                <form asp-action="DeleteItem" method="post" onsubmit="return confirm('Konuyu tamamen silmek üzeresin?')">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <input type="hidden" name="type" value="Topic" />
+                    <button type="submit" class="btn btn-link text-danger text-decoration-none fw-bold p-0" style="font-size:0.75rem">SİL</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Posts != null && Model.Posts.Any())
+    {
+        <h5 class="text-muted mb-3" style="font-size: 0.7rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px;">Gelen Yanıtlar</h5>
+        @foreach (var post in Model.Posts.OrderBy(p => p.CreatedAt))
+        {
+            var postLog = allLogs.FirstOrDefault(l => l.PostId == post.Id && !l.IsHandled);
+            bool isStarter = post.UserId == Model.UserId;
+
+            string postBoxClass = (postLog != null && postLog.CaughtWord != "DENETIM") ? "desc-box-red" :
+            ((!post.IsApproved || postLog != null) ? "desc-box-yellow" : "");
+
+            <div class="forum-card">
+                <div class="user-side">
+                    <div class="user-avatar" style="width: 55px; height: 55px; font-size: 1.4rem;">@post.User.UserName.Substring(0, 1).ToUpper()</div>
+                    <div class="user-name">@post.User.UserName</div>
+                    <div class="user-role">@(isStarter ? "TOPIC STARTER" : "MEMBER")</div>
+                    <button type="button" class="btn-ban-mini" onclick="openBanModal(@post.UserId, '@post.User.UserName')">
+                        BANLA
+                    </button>
+                </div>
+
+                <div class="content-side @postBoxClass">
+                    <div class="content-meta">
+                        <span>@post.CreatedAt.ToString("HH:mm")</span>
+                    </div>
+                    <div class="post-text">
+                        @Html.Raw(HighlightWords(post.Content))
+                    </div>
+
+                    <div class="mt-3 d-flex justify-content-end gap-3">
+                        @if (!post.IsApproved || postLog != null)
+                        {
+                            <form asp-action="ApproveItem" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@post.Id" />
+                                <input type="hidden" name="type" value="Post" />
+                                <button type="submit" class="btn btn-link text-success text-decoration-none fw-bold p-0" style="font-size:0.75rem">ONAYLA</button>
+                            </form>
+                        }
+                        <form asp-action="DeleteItem" method="post" onsubmit="return confirm('Mesajı silmek istediğine emin misin?')">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@post.Id" />
+                            <input type="hidden" name="type" value="Post" />
+                            <button type="submit" class="btn btn-link text-danger text-decoration-none fw-bold p-0" style="font-size:0.75rem">SİL</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<div class="modal fade" id="banModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-secondary">
+            <form asp-action="BanUserFromForum" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="userId" id="banUserId" />
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-white">Yasakla: <span id="banUserName" class="text-warning"></span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <textarea name="banReason" class="form-control bg-black border-secondary text-white" rows="3" required placeholder="Sebep belirtin..."></textarea>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="submit" class="btn btn-danger btn-sm fw-bold">MEN ET</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openBanModal(id, name) {
+        document.getElementById('banUserId').value = id;
+        document.getElementById('banUserName').innerText = name;
+        new bootstrap.Modal(document.getElementById('banModal')).show();
+    }
+</script>

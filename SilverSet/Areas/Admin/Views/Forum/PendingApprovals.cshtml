@@ -1,0 +1,183 @@
+﻿@using SilverSet.Areas.Admin.Models.ViewModels;
+@using SilverSet.Models.ViewModels
+@model IEnumerable<PendingItemViewModel>
+@{
+    ViewData["Title"] = "Moderation Queue";
+}
+
+<style>
+    body {
+        background-color: #050505;
+    }
+
+    .admin-container {
+        padding: 3rem 0;
+    }
+
+    .approval-card {
+        background: #0d0d0d;
+        border: 1px solid #1a1a1a;
+        border-radius: 8px;
+        padding: 2.5rem;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+    }
+
+    .approval-header {
+        border-bottom: 1px solid #222;
+        padding-bottom: 1.5rem;
+        margin-bottom: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+        .approval-header h2 {
+            color: #fff;
+            font-weight: 800;
+            font-size: 1.6rem;
+            margin: 0;
+        }
+
+    .item-type-badge {
+        font-size: 0.6rem;
+        padding: 3px 10px;
+        border-radius: 20px;
+        text-transform: uppercase;
+        font-weight: 800;
+        letter-spacing: 1px;
+    }
+
+    .type-topic {
+        background: #1a1a1a;
+        color: #aaa;
+        border: 1px solid #333;
+    }
+
+    .type-post {
+        background: #000;
+        color: #666;
+        border: 1px solid #222;
+    }
+
+    .post-review-item {
+        background: #111;
+        border: 1px solid #1a1a1a;
+        border-radius: 6px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .review-meta {
+        font-size: 0.75rem;
+        color: #444;
+        margin-bottom: 1rem;
+    }
+
+        .review-meta strong {
+            color: #888;
+        }
+
+    .review-title {
+        color: #eee;
+        font-weight: 700;
+        font-size: 1rem;
+        margin-bottom: 0.8rem;
+        display: block;
+    }
+
+    .review-content {
+        color: #aaa;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        background: #080808;
+        padding: 1.2rem;
+        border: 1px solid #151515;
+        border-radius: 4px;
+        margin-bottom: 1.5rem;
+        white-space: pre-wrap;
+    }
+
+    .btn-approve {
+        background: #e0e0e0;
+        color: #000;
+        font-weight: 800;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        padding: 0.6rem 1.5rem;
+        border: none;
+        border-radius: 3px;
+        transition: 0.3s;
+    }
+
+        .btn-approve:hover {
+            background: #fff;
+            transform: translateY(-1px);
+        }
+
+    .btn-delete {
+        background: transparent;
+        color: #555;
+        font-weight: 700;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        padding: 0.6rem 1.5rem;
+        border: 1px solid #222;
+        border-radius: 3px;
+        transition: 0.2s;
+    }
+
+        .btn-delete:hover {
+            background: #2e1515;
+            color: #ff6b6b;
+            border-color: #4a1a1a;
+        }
+</style>
+
+<div class="container admin-container">
+    <div class="approval-card">
+        <div class="approval-header">
+            <div>
+                <h2>Moderation Queue</h2>
+                <p class="text-muted small mb-0">Review pending topics and replies.</p>
+            </div>
+            <span class="badge bg-dark">@Model.Count() Items Pending</span>
+        </div>
+
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5 text-muted">The moderation queue is currently empty.</div>
+        }
+
+        @foreach (var item in Model)
+        {
+            <div class="post-review-item">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="review-meta">
+                        <strong>User:</strong> @item.UserName |
+                        <strong>Date:</strong> @item.CreatedAt.ToString("g")
+                    </div>
+                    <span class="item-type-badge @(item.Type == "Topic" ? "type-topic" : "type-post")">@item.Type</span>
+                </div>
+
+                <span class="review-title">@item.Title</span>
+                <div class="review-content">@item.Content</div>
+
+                <div class="d-flex gap-3 justify-content-end">
+                    <form asp-action="DeleteItem" method="post" onsubmit="return confirm('Permanent delete?')">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@item.Id" />
+                        <input type="hidden" name="type" value="@item.Type" />
+                        <button type="submit" class="btn-delete">Discard</button>
+                    </form>
+
+                    <form asp-action="ApproveItem" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@item.Id" />
+                        <input type="hidden" name="type" value="@item.Type" />
+                        <button type="submit" class="btn-approve">Approve Item</button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+</div>

@@ -173,6 +173,23 @@ public class ContactController : Controller
         return View(ticket);
     }
 
+    [Authorize]
+    public async Task<IActionResult> History()
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdString, out int userId)) return RedirectToAction("Login", "Account");
+
+        var closedTickets = await _context.Tickets
+            .AsNoTracking()
+            .Include(t => t.Messages)
+            .Include(t => t.Attachments)
+            .Where(t => t.UserId == userId && !t.IsOpen)
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync();
+
+        return View(closedTickets);
+    }
+
     private async Task<string?> ProcessAttachment(IFormFile? file)
     {
         if (file == null || file.Length == 0) return null;

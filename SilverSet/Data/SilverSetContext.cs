@@ -10,7 +10,7 @@ public class SilverSetContext : IdentityDbContext<AppUser, AppRole, int>
     public SilverSetContext(DbContextOptions<SilverSetContext> options) : base(options)
     {
     }
-
+    public DbSet<ForumSpamLog> ForumSpamLogs { get; set; }
     public DbSet<PasswordResetLog> PasswordResetLogs { get; set; }
     public DbSet<UserLoginLog> UserLoginLogs { get; set; }
     public DbSet<Ticket> Tickets { get; set; }
@@ -20,6 +20,7 @@ public class SilverSetContext : IdentityDbContext<AppUser, AppRole, int>
     public DbSet<ForumTopic> ForumTopics { get; set; }
     public DbSet<ForumPost> ForumPosts { get; set; }
     public DbSet<BadWord> BadWords { get; set; }
+    public DbSet<GlobalSetting> GlobalSettings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -37,11 +38,7 @@ public class SilverSetContext : IdentityDbContext<AppUser, AppRole, int>
         {
             entity.HasIndex(m => m.TicketId);
             entity.HasIndex(m => m.SentAt);
-
-            entity.HasOne(m => m.Sender)
-                .WithMany()
-                .HasForeignKey(m => m.SenderId)
-                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(m => m.Sender).WithMany().HasForeignKey(m => m.SenderId).OnDelete(DeleteBehavior.Restrict);
         });
 
         builder.Entity<BadWord>(entity =>
@@ -51,28 +48,28 @@ public class SilverSetContext : IdentityDbContext<AppUser, AppRole, int>
 
         builder.Entity<ForumTopic>(entity =>
         {
-            entity.HasOne(t => t.Category)
-                .WithMany(c => c.Topics)
-                .HasForeignKey(t => t.CategoryId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(t => t.User)
-                .WithMany()
-                .HasForeignKey(t => t.UserId)
-                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(t => t.Category).WithMany(c => c.Topics).HasForeignKey(t => t.CategoryId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(t => t.User).WithMany().HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.Restrict);
         });
 
         builder.Entity<ForumPost>(entity =>
         {
-            entity.HasOne(p => p.Topic)
-                .WithMany(t => t.Posts)
-                .HasForeignKey(p => p.TopicId)
-                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(p => p.Topic).WithMany(t => t.Posts).HasForeignKey(p => p.TopicId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(p => p.User).WithMany().HasForeignKey(p => p.UserId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(p => p.ParentPost).WithMany(p => p.Replies).HasForeignKey(p => p.ParentPostId).OnDelete(DeleteBehavior.Restrict);
+        });
 
-            entity.HasOne(p => p.User)
-                .WithMany()
-                .HasForeignKey(p => p.UserId)
-                .OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<ForumSpamLog>(entity =>
+        {
+            entity.HasOne(l => l.Topic).WithMany().HasForeignKey(l => l.TopicId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(l => l.Post).WithMany().HasForeignKey(l => l.PostId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(l => l.User).WithMany().HasForeignKey(l => l.UserId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(l => l.RelatedSpam).WithMany().HasForeignKey(l => l.RelatedSpamId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<GlobalSetting>(entity =>
+        {
+            entity.HasIndex(s => s.Key).IsUnique();
         });
     }
 }
