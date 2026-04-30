@@ -183,6 +183,9 @@ namespace SilverSet.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("ForcePostApproval")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsBanned")
                         .HasColumnType("bit");
 
@@ -360,6 +363,62 @@ namespace SilverSet.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("ForumPosts");
+                });
+
+            modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumSpamLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CaughtWord")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("ForumSpamLogId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsHandled")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("PostId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("RelatedSpamId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TopicId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ForumSpamLogId");
+
+                    b.HasIndex("PostId");
+
+                    b.HasIndex("RelatedSpamId");
+
+                    b.HasIndex("TopicId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ForumSpamLogs");
                 });
 
             modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumTopic", b =>
@@ -680,6 +739,42 @@ namespace SilverSet.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumSpamLog", b =>
+                {
+                    b.HasOne("SilverSet.Models.Entities.Forum.ForumSpamLog", null)
+                        .WithMany("SecondaryLogs")
+                        .HasForeignKey("ForumSpamLogId");
+
+                    b.HasOne("SilverSet.Models.Entities.Forum.ForumPost", "Post")
+                        .WithMany()
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SilverSet.Models.Entities.Forum.ForumSpamLog", "RelatedSpam")
+                        .WithMany()
+                        .HasForeignKey("RelatedSpamId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SilverSet.Models.Entities.Forum.ForumTopic", "Topic")
+                        .WithMany()
+                        .HasForeignKey("TopicId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SilverSet.Models.Entities.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Post");
+
+                    b.Navigation("RelatedSpam");
+
+                    b.Navigation("Topic");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumTopic", b =>
                 {
                     b.HasOne("SilverSet.Models.Entities.Forum.ForumCategory", "Category")
@@ -748,6 +843,11 @@ namespace SilverSet.Migrations
             modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumPost", b =>
                 {
                     b.Navigation("Replies");
+                });
+
+            modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumSpamLog", b =>
+                {
+                    b.Navigation("SecondaryLogs");
                 });
 
             modelBuilder.Entity("SilverSet.Models.Entities.Forum.ForumTopic", b =>

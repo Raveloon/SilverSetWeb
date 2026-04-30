@@ -1,13 +1,5 @@
-﻿@using Microsoft.EntityFrameworkCore
-@inject SilverSet.Data.SilverSetContext _context
+﻿@using SilverSet.Areas.Admin.Models
 @{
-    // Forum Onay Bekleyenler
-    var pTopics = _context.ForumTopics.Count(t => !t.IsApproved);
-    var pPosts = _context.ForumPosts.Count(p => !p.IsApproved);
-
-    // Ticket Sayıları (DbSet ismini 'Tickets' olarak düzelttim)
-    var activeTicketCount = _context.Tickets.Count(t => t.IsOpen && !t.IsSpam);
-    var spamTicketCount = _context.Tickets.Count(t => t.IsOpen && t.IsSpam);
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -154,7 +146,6 @@
                 text-align: center;
             }
 
-        /* BADGE TASARIMLARI */
         .badge-group {
             display: flex;
             gap: 5px;
@@ -174,6 +165,7 @@
             min-width: 20px;
             height: 20px;
             line-height: 1;
+            margin-left: auto;
         }
 
         .badge-red {
@@ -366,19 +358,19 @@
 
             <div class="nav-section-label">SUPPORT</div>
             <a asp-area="Admin" asp-controller="Tickets" asp-action="Index" asp-route-view="active"
-               class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tickets" && (string)ViewContext.RouteData.Values["action"] == "Index" ? "active" : "")">
+               class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tickets" && Context.Request.Query["view"] == "active" ? "active" : "")">
                 <i class="bi bi-ticket-detailed"></i> Support Tickets
-                @if (activeTicketCount > 0)
+                @if (ViewBag.ActiveTicketCount > 0)
                 {
-                    <span class="notification-badge badge-red">@activeTicketCount</span>
+                    <span class="notification-badge badge-red">@ViewBag.ActiveTicketCount</span>
                 }
             </a>
             <a asp-area="Admin" asp-controller="Tickets" asp-action="Index" asp-route-view="spam"
-               class="sidebar-link">
+               class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tickets" && Context.Request.Query["view"] == "spam" ? "active" : "")">
                 <i class="bi bi-shield-x"></i> Spam
-                @if (spamTicketCount > 0)
+                @if (ViewBag.SpamTicketCount > 0)
                 {
-                    <span class="notification-badge badge-red">@spamTicketCount</span>
+                    <span class="notification-badge badge-red">@ViewBag.SpamTicketCount</span>
                 }
             </a>
 
@@ -404,18 +396,17 @@
             <a asp-area="Admin" asp-controller="Forum" asp-action="PendingApprovals"
                class="sidebar-link @(ViewContext.RouteData.Values["action"]?.ToString() == "PendingApprovals" ? "active" : "")">
                 <i class="bi bi-shield-exclamation"></i> Approvals
-                @if (pTopics > 0 || pPosts > 0)
+                @if (ViewBag.ForumApprovalCount > 0)
                 {
-                    <div class="badge-group">
-                        @if (pTopics > 0)
-                        {
-                            <span class="notification-badge badge-orange" title="Pending Topics">@pTopics</span>
-                        }
-                        @if (pPosts > 0)
-                        {
-                            <span class="notification-badge badge-red" title="Pending Posts">@pPosts</span>
-                        }
-                    </div>
+                    <span class="notification-badge badge-orange">@ViewBag.ForumApprovalCount</span>
+                }
+            </a>
+            <a asp-area="Admin" asp-controller="Forum" asp-action="SpamLogs"
+               class="sidebar-link @(ViewContext.RouteData.Values["action"]?.ToString() == "SpamLogs" ? "active" : "")">
+                <i class="bi bi-shield-slash"></i> Forum Spam Logs
+                @if (ViewBag.ForumSpamCount > 0)
+                {
+                    <span class="notification-badge badge-red">@ViewBag.ForumSpamCount</span>
                 }
             </a>
         </nav>

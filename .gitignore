@@ -110,7 +110,6 @@ StyleCopReport.xml
 *.pgc
 *.pgd
 *.rsp
-# but not Directory.Build.rsp, as it configures directory-level build defaults
 !Directory.Build.rsp
 *.sbr
 *.tlb
@@ -213,8 +212,6 @@ publish/
 # Publish Web Output
 *.[Pp]ublish.xml
 *.azurePubxml
-# Note: Comment the next line if you want to checkin your web deploy settings,
-# but database connection strings (with potential passwords) will be unencrypted
 *.pubxml
 *.publishproj
 
@@ -433,3 +430,7 @@ FodyWeavers.xsd
 wwwroot/lib/
 
 wwwroot/data/blacklist.txt
+build_simple.log
+msbuild.log
+docker-compose.yaml
+Dockerfile
