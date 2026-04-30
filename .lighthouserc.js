@@ -1,15 +1,13 @@
 module.exports = {
     ci: {
         collect: {
-            // Projeyi GitHub Actions üzerinde ayağa kaldıracak komut
-            startServerCommand: "dotnet run --project SilverSet/SilverSet.csproj",
-            // Sunucunun tamamen açılmasını beklemek için URL
+            // dotnet run komutu projenin ana dizinindeki csproj dosyasını hedeflemeli
+            startServerCommand: "dotnet run --project SilverSet/SilverSet.csproj --urls http://localhost:5295",
             url: [
-                "http://localhost:5000/",
-                "http://localhost:5000/Home/Index"
+                "http://localhost:5295/",
+                "http://localhost:5295/Home/Index"
             ],
             numberOfRuns: 2,
-            // Sunucunun hazır olduğundan emin olmak için bekleme süresi (ms)
             startServerReadyTimeout: 60000 
         },
         upload: {
