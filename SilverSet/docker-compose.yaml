@@ -1,0 +1,47 @@
+services:
+  silverset.db:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: silverset_sql_server
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrongPassword123!
+    ports:
+      - "1435:1433"
+    volumes:
+      - silverset_db_data:/var/opt/mssql
+    networks:
+      - silverset_network
+
+  silverset.web:
+    image: silverset_app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: silverset_web_app
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=silverset.db;Database=SilverSetDb;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True;
+      
+      - AdminSetup__AdminName=Admin
+      - AdminSetup__Password=YcwnYM1e3S21pm
+      - AdminSetup__AdminEmail=info@silversetstudios.com
+      - AdminSetup__AdminRole=Admin
+
+      - CloudflareTurnstile__SiteKey=1x00000000000000000000AA
+      - CloudflareTurnstile__SecretKey=1x0000000000000000000000000000000AA
+    volumes:
+      - silverset_keys:/home/app/.aspnet/DataProtection-Keys
+    depends_on:
+      - silverset.db
+    networks:
+      - silverset_network
+
+networks:
+  silverset_network:
+    driver: bridge
+
+volumes:
+  silverset_db_data:
+  silverset_keys:
