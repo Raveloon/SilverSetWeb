@@ -1,0 +1,41 @@
+name: Lighthouse CI
+
+on:
+  push:
+    branches: [ "main", "docker-v1.0" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install LHCI
+        run: npm install -g @lhci/cli@0.12.x
+
+      - name: Build Project
+        run: dotnet build
+
+      - name: Run Project in Background
+        run: dotnet run &
+        
+      - name: Wait for App to Start
+        run: sleep 15
+
+      - name: Run Lighthouse CI
+        run: lhci autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
