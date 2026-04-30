@@ -23,7 +23,7 @@
     }
 
     .contact-subtitle {
-        color: #888;
+        color: #ccc;
         letter-spacing: 2px;
         font-size: 0.9rem;
         margin-top: 0.5rem;
@@ -98,7 +98,7 @@
     }
 
     .info-content p {
-        color: #888;
+        color: #ccc;
         font-size: 0.85rem;
         margin: 0;
         line-height: 1.5;
@@ -134,7 +134,7 @@
         gap: 1rem;
         background: #0a0a0a;
         border: 1px dashed #444;
-        color: #888;
+        color: #ccc;
         padding: 1.5rem;
         border-radius: 4px;
         cursor: pointer;
@@ -213,7 +213,7 @@
     .btn-history {
         display: block;
         text-align: center;
-        color: #888;
+        color: #ccc;
         text-decoration: none;
         font-size: 0.75rem;
         font-weight: 800;
@@ -268,12 +268,14 @@
     }
 
     .msg-bubble {
-        max-width: 80%;
+        max-width: 85%;
         padding: 0.85rem 1.2rem;
         border-radius: 4px;
         font-size: 0.85rem;
         line-height: 1.6;
         word-wrap: break-word;
+        word-break: break-all;
+        overflow-wrap: anywhere;
     }
 
     .msg-user {
@@ -312,6 +314,12 @@
 
     .input-wrapper {
         display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .input-row {
+        display: flex;
         gap: 0.8rem;
         align-items: center;
     }
@@ -327,6 +335,23 @@
         align-items: center;
         justify-content: center;
         cursor: pointer;
+        transition: 0.2s;
+    }
+
+        .btn-send:disabled {
+            background: #333;
+            border-color: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+    .char-counter {
+        font-size: 0.65rem;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+        color: #bbb;
+        text-transform: uppercase;
+        text-align: right;
     }
 
     @@media (max-width: 991px) {
@@ -343,7 +368,7 @@
     </header>
     <div class="contact-grid">
         <aside class="contact-panel">
-            <h2 class="panel-title"><i class="bi bi-hdd-network"></i> Global Comms</h2>
+            <h2 class="panel-title"><i class="bi bi-hdd-network"></i> contact informations</h2>
             <ul class="info-list">
                 <li class="info-item">
                     <div class="info-icon"><i class="bi bi-envelope-paper"></i></div>
@@ -368,7 +393,7 @@
                     <article class="chat-container">
                         <header class="chat-header">
                             <div>
-                                <span style="color:#666; font-size:0.6rem; font-weight:800;">TICKET #@Model.ActiveTicket.Id</span>
+                                <span style="color:#bbb; font-size:0.6rem; font-weight:800;">TICKET #@Model.ActiveTicket.Id</span>
                                 <div style="color:white; font-weight:700;">@Model.ActiveTicket.Subject</div>
                             </div>
                             <div style="background:#fff; color:#000; padding:0.3rem 0.8rem; border-radius:4px; font-size:0.65rem; font-weight:900;">ACTIVE</div>
@@ -407,8 +432,11 @@
                         </div>
                         <footer class="chat-input-area">
                             <div class="input-wrapper">
-                                <input type="text" id="messageInput" class="form-control-custom mb-0" placeholder="Transmit real-time message..." autocomplete="off" />
-                                <button id="sendBtn" class="btn-send"><i class="bi bi-send-fill"></i></button>
+                                <div class="input-row">
+                                    <input type="text" id="messageInput" class="form-control-custom mb-0" placeholder="Transmit real-time message..." autocomplete="off" maxlength="500" />
+                                    <button id="sendBtn" class="btn-send" disabled><i class="bi bi-send-fill"></i></button>
+                                </div>
+                                <div id="chatCounter" class="char-counter">0 / 500 CHARACTERS</div>
                             </div>
                         </footer>
                     </article>
@@ -430,7 +458,7 @@
                         <div class="mb-4 d-flex justify-content-center">
                             <div class="cf-turnstile" data-sitekey="@Configuration["CloudflareTurnstile:SiteKey"]" data-theme="dark"></div>
                         </div>
-                        <button type="submit" class="btn-submit-ticket">INITIALIZE MISSION</button>
+                        <button type="submit" id="submitTicketBtn" class="btn-submit-ticket" disabled>INITIALIZE MISSION</button>
                     </form>
                     @if (Model.ClosedTicketsCount > 0)
                     {
@@ -462,6 +490,8 @@
             fileInput.addEventListener('change', function() {
                 const files = Array.from(this.files);
                 files.forEach(file => { if (selectedFiles.length < 5) selectedFiles.push(file); });
+                });
+
                 renderPreviews();
                 this.value = "";
             });
@@ -470,27 +500,25 @@
             previewArea.innerHTML = "";
             selectedFiles.forEach((file, index) => {
                 const reader = new FileReader();
-                const box = document.createElement("div");
-                box.className = "preview-box";
                 reader.onload = (e) => { box.innerHTML = `<img src="${e.target.result}"><button type="button" class="remove-btn" onclick="removeFile(${index})">×</button>`; };
-                reader.readAsDataURL(file);
-                previewArea.appendChild(box);
-            });
+                        <button type="button" class="remove-btn" onclick="removeFile(${index})">×</button>
+                    `;
+                };
             labelText.innerHTML = selectedFiles.length > 0 ? `<span style="color:#fff;">${selectedFiles.length}</span> FILE(S) SELECTED` : "Attach Evidence (Max 5)";
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            renderPreviews();
         }
         function removeFile(index) { selectedFiles.splice(index, 1); renderPreviews(); }
         if(ticketForm) {
-            ticketForm.addEventListener('submit', function(e) {
-                const dt = new DataTransfer();
-                selectedFiles.forEach(file => dt.items.add(file));
-                const finalInput = document.createElement('input');
                 finalInput.type = 'file'; finalInput.name = 'attachments'; finalInput.multiple = true; finalInput.files = dt.files; finalInput.style.display = 'none';
+                finalInput.name = 'attachments';
+                finalInput.multiple = true;
+                finalInput.files = dt.files;
+                finalInput.style.display = 'none';
+
                 this.appendChild(finalInput);
-            });
-        }
-        @if (Model.ActiveTicket != null)
-        {
-            <text>
                     const connection = new signalR.HubConnectionBuilder().withUrl("/ticketHub").withAutomaticReconnect().build();
                     const chatBox = document.getElementById("chatBox");
                     const messageInput = document.getElementById("messageInput");
@@ -500,9 +528,9 @@
                     connection.on("ReceiveMessage", (message, isAdmin) => {
                         const isAdminUser = "@(User.IsInRole("Admin") ? "true" : "false")" === "true";
                         const isSystem = message.startsWith("[CLOSED]") || message.startsWith("[RE-OPENED]") || message.startsWith("[BANNED]") || message.startsWith("[FLAGGED]") || message.startsWith("[RESTORED]");
-
+                const connection = new signalR.HubConnectionBuilder().withUrl("/ticketHub").withAutomaticReconnect().build();
                         if (isSystem && !isAdminUser) return;
-
+                const messageInput = document.getElementById("messageInput");
                         const div = document.createElement("div");
                         if (isSystem) {
                             div.className = "msg-system";
@@ -528,6 +556,11 @@
                     };
                     sendBtn?.addEventListener("click", transmit);
                     messageInput?.addEventListener("keypress", (e) => { if (e.key === "Enter") transmit(); });
+                        messageInput.value = "";
+                    }
+                };
+                sendBtn?.addEventListener("click", transmit);
+                messageInput?.addEventListener("keypress", (e) => { if (e.key === "Enter") transmit(); });
             </text>
         }
     </script>
