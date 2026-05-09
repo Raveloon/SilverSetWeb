@@ -7,6 +7,8 @@ using System.Threading.RateLimiting;
 using SilverSet.Hubs;
 using SilverSet.Filters;
 using SilverSet.Services;
+using DinkToPdf;
+using DinkToPdf.Contracts;
 
 namespace SilverSet;
 
@@ -56,6 +58,9 @@ public class Program
         builder.Services.AddScoped<AdminNotificationFilter>();
         builder.Services.AddScoped<ForumSettingsService>();
         builder.Services.AddScoped<ForumAccessFilter>();
+
+        // DinkToPdf Servisi (PDF oluþturma için)
+        builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
 
         builder.Services.AddControllersWithViews(options =>
         {
