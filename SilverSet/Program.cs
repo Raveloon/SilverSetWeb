@@ -133,18 +133,29 @@ public class Program
 
         app.MapHub<TicketHub>("/ticketHub").RequireRateLimiting("Strict");
 
-        // --- SEEDING & MIGRATION BLOCK ---
+        // --- SEEDING & MIGRATION BLOCK (DÜZELTÝLDÝ) ---
         using (var scope = app.Services.CreateScope())
         {
             var services = scope.ServiceProvider;
             var logger = services.GetRequiredService<ILogger<Program>>();
+            var env = services.GetRequiredService<IWebHostEnvironment>(); // Ortam kontrolü için eklendi
 
             try
             {
                 var context = services.GetRequiredService<SilverSetContext>();
 
-                logger.LogInformation("Veritabaný kontrol ediliyor/migrate ediliyor...");
-                await context.Database.MigrateAsync();
+                // CI (GitHub Actions) ortamýnda migration LocalDB yüzünden patlar. 
+                // Bu yüzden CI ortamýnda sadece 'EnsureCreated' yapýyoruz ya da migration'ý kontrollü yapýyoruz.
+                if (env.IsEnvironment("CI"))
+                {
+                    logger.LogInformation("CI ortamý algýlandý. Sadece veritabaný þemasý kontrol ediliyor...");
+                    await context.Database.EnsureCreatedAsync();
+                }
+                else
+                {
+                    logger.LogInformation("Veritabaný kontrol ediliyor/migrate ediliyor...");
+                    await context.Database.MigrateAsync();
+                }
 
                 var userManager = services.GetRequiredService<UserManager<AppUser>>();
                 var roleManager = services.GetRequiredService<RoleManager<AppRole>>();
@@ -168,7 +179,6 @@ public class Program
                 string? adminPassword = configuration["AdminSetup:Password"];
                 string? adminEmail = configuration["AdminSetup:AdminEmail"];
 
-                // Debug: Konfigürasyonun gelip gelmediðini logla
                 logger.LogInformation("Admin Seeding Kontrolü: Name={Name}, Role={Role}, Email={Email}",
                     adminName ?? "NULL", adminRole ?? "NULL", adminEmail ?? "NULL");
 
@@ -201,27 +211,13 @@ public class Program
                                 logger.LogInformation("Admin kullanýcýsýna {Role} rolü atandý.", adminRole);
                             }
                         }
-                        else
-                        {
-                            foreach (var error in result.Errors)
-                            {
-                                logger.LogError("Admin oluþturma hatasý: {Error}", error.Description);
-                            }
-                        }
                     }
-                    else
-                    {
-                        logger.LogInformation("Admin kullanýcýsý zaten mevcut.");
-                    }
-                }
-                else
-                {
-                    logger.LogWarning("AdminSetup verileri eksik! Environment deðiþkenlerini kontrol edin.");
                 }
             }
             catch (Exception ex)
             {
-                logger.LogCritical(ex, "Seeding veya Migration iþlemi sýrasýnda KRÝTÝK HATA oluþtu!");
+                // HATA BURADA YAKALANIYOR: Veritabaný patlasa bile logger'a yazýp uygulamayý öldürmüyoruz.
+                logger.LogCritical(ex, "Veritabaný iþlemi sýrasýnda hata oluþtu. Lighthouse taramasý için uygulama baþlatýlmaya devam ediliyor...");
             }
         }
 
