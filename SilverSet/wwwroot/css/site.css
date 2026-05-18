@@ -21,10 +21,11 @@
     --color-border: rgba(180, 180, 180, 0.15);
     /* Yazý renkleri */
     --color-text: #e2e8f0;
-    --color-text-muted: #6b7280;
+    /* DÜZELTME: Pa11y kontrast hatasý (#6b7280 yetersiz kalýyordu)
+       Yeni renk (#9ca3af) 4.5:1 oranýný yakalayarak AA standardýný geçer.
+    */
+    --color-text-muted: #9ca3af;
 }
-/* ============================================= */
-
 html {
     font-size: 14px;
 }

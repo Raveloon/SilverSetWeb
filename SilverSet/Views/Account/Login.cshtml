@@ -213,7 +213,7 @@
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="text-danger small mb-4 text-center"></div>
 
-            <input type="text" name="TerminalAccessCode" style="display:none !important; position:absolute; left:-9999px;" tabindex="-1" autocomplete="off" />
+            <input type="text" name="TerminalAccessCode" aria-label="Terminal Access Code" style="display:none !important; position:absolute; left:-9999px;" tabindex="-1" autocomplete="off" />
 
             <div class="mb-4">
                 <label asp-for="UserName" class="form-label text-accent fw-medium">USERNAME</label>
@@ -231,13 +231,14 @@
                 <div class="password-wrapper">
                     <input asp-for="Password"
                            id="loginPassword"
+                           aria-label="Password"
                            class="form-control terminal-input"
                            placeholder="••••••••"
                            type="password"
                            autocomplete="new-password"
                            readonly
                            onfocus="this.removeAttribute('readonly')" />
-                    <button type="button" class="btn-eye" onclick="togglePassword()" tabindex="-1">
+                    <button type="button" class="btn-eye" aria-label="Toggle password visibility" onclick="togglePassword()" tabindex="-1">
                         <svg id="icon-closed" viewBox="0 0 24 24">
                             <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
                             <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />

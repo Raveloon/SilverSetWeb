@@ -107,7 +107,8 @@
 
     .hero-subtitle {
         font-size: 1.05rem;
-        color: var(--color-text-muted);
+        /* Pa11y contrast fix */
+        color: #9ca3af;
         max-width: 480px;
         line-height: 1.7;
         margin-bottom: 2.5rem;
@@ -308,7 +309,8 @@
     }
 
     .section-subtitle {
-        color: var(--color-text-muted);
+        /* Pa11y contrast fix */
+        color: #9ca3af;
         font-size: 0.95rem;
     }
 
@@ -598,12 +600,17 @@
             <div class="games-carousel-container position-relative">
                 @if (isCarousel)
                 {
-                    <button class="btn rounded-circle position-absolute top-50 start-0 translate-middle-y d-flex align-items-center justify-content-center z-3 carousel-nav-btn shadow" id="btnScrollLeft">
+                    @* Pa11y Fix: Butonlara aria-label eklendi *@
+                    <button class="btn rounded-circle position-absolute top-50 start-0 translate-middle-y d-flex align-items-center justify-content-center z-3 carousel-nav-btn shadow"
+                            id="btnScrollLeft"
+                            aria-label="Previous projects">
                         <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
-                    <button class="btn rounded-circle position-absolute top-50 end-0 translate-middle-y d-flex align-items-center justify-content-center z-3 carousel-nav-btn shadow" id="btnScrollRight">
+                    <button class="btn rounded-circle position-absolute top-50 end-0 translate-middle-y d-flex align-items-center justify-content-center z-3 carousel-nav-btn shadow"
+                            id="btnScrollRight"
+                            aria-label="Next projects">
                         <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
                         </svg>
