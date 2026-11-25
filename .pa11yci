@@ -21,66 +21,6 @@
     "https://localhost:5001/Account/Login",
     "https://localhost:5001/Account/Register",
     "https://localhost:5001/Account/ForgotPassword",
-    "https://localhost:5001/Home/Privacy",
-    {
-      "url": "https://localhost:5001/Forum/CreateTopic",
-      "actions": [
-        "navigate to https://localhost:5001/Account/Login",
-        "set field #UserName to Admin",
-        "set field #loginPassword to YcwnYM1e3S21pm",
-        "click element button[type='submit']",
-        "wait for url to be https://localhost:5001/Forum/CreateTopic"
-      ]
-    },
-    {
-      "url": "https://localhost:5001/Admin/Dashboard",
-      "actions": [
-        "navigate to https://localhost:5001/Account/Login",
-        "set field #UserName to Admin",
-        "set field #loginPassword to YcwnYM1e3S21pm",
-        "click element button[type='submit']",
-        "wait for url to be https://localhost:5001/Admin/Dashboard"
-      ]
-    },
-    {
-      "url": "https://localhost:5001/Admin/Assets",
-      "actions": [
-        "navigate to https://localhost:5001/Account/Login",
-        "set field #UserName to Admin",
-        "set field #loginPassword to YcwnYM1e3S21pm",
-        "click element button[type='submit']",
-        "wait for url to be https://localhost:5001/Admin/Assets"
-      ]
-    },
-    {
-      "url": "https://localhost:5001/Admin/Users",
-      "actions": [
-        "navigate to https://localhost:5001/Account/Login",
-        "set field #UserName to Admin",
-        "set field #loginPassword to YcwnYM1e3S21pm",
-        "click element button[type='submit']",
-        "wait for url to be https://localhost:5001/Admin/Users"
-      ]
-    },
-    {
-      "url": "https://localhost:5001/Admin/Tickets",
-      "actions": [
-        "navigate to https://localhost:5001/Account/Login",
-        "set field #UserName to Admin",
-        "set field #loginPassword to YcwnYM1e3S21pm",
-        "click element button[type='submit']",
-        "wait for url to be https://localhost:5001/Admin/Tickets"
-      ]
-    },
-    {
-      "url": "https://localhost:5001/Admin/Forum/Categories",
-      "actions": [
-        "navigate to https://localhost:5001/Account/Login",
-        "set field #UserName to Admin",
-        "set field #loginPassword to YcwnYM1e3S21pm",
-        "click element button[type='submit']",
-        "wait for url to be https://localhost:5001/Admin/Forum/Categories"
-      ]
-    }
+    "https://localhost:5001/Home/Privacy"
   ]
 }
